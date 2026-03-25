@@ -12,13 +12,23 @@ import {
 import { useState, useRef, useEffect } from "react";
 import { useConfirm } from "@/context/ConfirmContext";
 
+type Branch = {
+  _id: string;
+  name: string;
+};
+
+type Teacher = {
+  _id: string;
+  name: string;
+};
+
 type ClassItem = {
   _id: string;
   className: string;
   classCode?: string;
   description?: string;
-  teacher?: string;
-  branches?: string[];
+  teacher?: Teacher;
+  branches?: Branch[];
 };
 
 const BRANCH_COLOR_MAP: Record<string, string> = {
@@ -145,15 +155,15 @@ export default function Table({
                   <td className="px-4 py-2">
                     {item.branches?.length ? (
                       <div className="flex flex-wrap gap-1 max-w-[240px]">
-                        {item.branches.map((b, i) => (
+                        {item.branches?.map((b) => (
                           <span
-                            key={i}
+                            key={b._id || b.name}
                             className={`px-2 py-0.5 rounded-full text-[13px] border ${
-                              BRANCH_COLOR_MAP[b] ||
+                              BRANCH_COLOR_MAP[b.name] ||
                               "bg-gray-100 text-gray-600 border-gray-200"
                             }`}
                           >
-                            {b}
+                            {b.name}
                           </span>
                         ))}
                       </div>
@@ -163,7 +173,7 @@ export default function Table({
                   </td>
 
                   <td className="px-4 py-2 text-sm truncate">
-                    {item.teacher || "-"}
+                    {item.teacher?.name || "-"}
                   </td>
 
                   <td className="px-4 py-2">
@@ -171,7 +181,7 @@ export default function Table({
                       <button
                         onClick={() =>
                           router.push(
-                            `/classes/form?classId=${item._id}&className=${item.className}&classCode=${item.classCode}&teacher=${item.teacher}`,
+                            `/classes/form?classId=${item._id}&className=${item.className}&classCode=${item.classCode}&teacher=${item.teacher?.name}`,
                           )
                         }
                         className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 text-sm cursor-pointer"

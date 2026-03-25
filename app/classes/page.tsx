@@ -7,13 +7,45 @@ import { DocumentTextIcon } from "@heroicons/react/24/outline";
 import Table from "@/components/classes/Table";
 import Select from "@/components/classes/Select";
 
+type Branch = {
+  _id: string;
+  name: string;
+};
+
+type Teacher = {
+  _id: string;
+  name: string;
+};
+
 type ClassItem = {
   _id: string;
   className: string;
   classCode?: string;
   description?: string;
-  branches?: string[];
+  teacher?: Teacher;
+  branches?: Branch[];
 };
+
+type RawBranch = string | Branch;
+type RawTeacher = string | Teacher;
+
+type RawClass = {
+  _id: string;
+  className: string;
+  classCode?: string;
+  description?: string;
+  teacher?: RawTeacher;
+  branches?: RawBranch[];
+};
+
+const normalizeClass = (c: RawClass): ClassItem => ({
+  ...c,
+  teacher:
+    typeof c.teacher === "string" ? { _id: "", name: c.teacher } : c.teacher,
+  branches: (c.branches ?? []).map((b) =>
+    typeof b === "string" ? { _id: b, name: b } : b,
+  ),
+});
 
 export default function ClassesPage() {
   const router = useRouter();
@@ -32,11 +64,15 @@ export default function ClassesPage() {
         setLoading(true);
 
         const res = await fetch("/api/classes");
-        const data = await res.json();
+
+        const data: { success: boolean; data: RawClass[] } = await res.json();
 
         if (data.success) {
-          setClasses(data.data);
+          const safeData = data.data.map(normalizeClass);
+          setClasses(safeData);
         }
+      } catch (error) {
+        console.error("Fetch classes error:", error);
       } finally {
         setLoading(false);
       }
@@ -50,10 +86,10 @@ export default function ClassesPage() {
 
     const matchKeyword =
       c.className.toLowerCase().includes(keyword) ||
-      c.classCode?.toLowerCase().includes(keyword);
+      (c.classCode ?? "").toLowerCase().includes(keyword);
 
     const matchBranch = filter.branch
-      ? c.branches?.includes(filter.branch)
+      ? (c.branches ?? []).some((b) => b.name === filter.branch)
       : true;
 
     return matchKeyword && matchBranch;
@@ -103,10 +139,11 @@ export default function ClassesPage() {
               <div className="mb-3 flex items-center justify-between">
                 <Select data={classes} onChange={setFilter} />
               </div>
+
               <Table
                 data={filteredClasses}
                 onDeleteSuccess={handleDeleteSuccess}
-              />{" "}
+              />
             </div>
           </div>
         )}

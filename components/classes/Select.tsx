@@ -6,11 +6,16 @@ import {
   MagnifyingGlassIcon,
 } from "@heroicons/react/24/outline";
 
+type Branch = {
+  _id: string;
+  name: string;
+};
+
 type ClassItem = {
   _id: string;
   className: string;
   classCode?: string;
-  branches?: string[];
+  branches?: Branch[];
 };
 
 type Props = {
@@ -37,7 +42,7 @@ export default function ClassFilter({ data, onChange }: Props) {
   }, []);
 
   const branchOptions = useMemo(() => {
-    const all = data.flatMap((c) => c.branches || []);
+    const all = data.flatMap((c) => (c.branches || []).map((b) => b.name));
     return [...new Set(all)];
   }, [data]);
 
