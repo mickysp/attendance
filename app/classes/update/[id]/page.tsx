@@ -16,33 +16,15 @@ type ClassItem = {
   branches: string[];
 };
 
-const BRANCH_OPTIONS = [
-  "เทคโนโลยีสารสนเทศและนวัตกรรมอัจฉริยะ",
-  "วิทยาการคอมพิวเตอร์",
-  "ภูมิสารสนเทศศาสตร์",
-  "ปัญญาประดิษฐ์",
-  "ความมั่นคงปลอดภัยไซเบอร์",
-];
+type Major = {
+  _id: string;
+  name: string;
+};
 
-const TEACHERS = [
-  "รศ.ดร.งามนิจ อาจอินทร์",
-  "รศ.ดร.วรารัตน์ สงฆ์แป้น",
-  "อ.ดร.วรัญญา วรรณศรี",
-  "ผศ.ดร.มัลลิกา วัฒนะ",
-  "ผศ.ดร.ปวีณา วันชัย",
-  "ผศ.ดร.สุมณฑา เกษมวิลาศ",
-  "ศ.ดร.จักรชัย โสอินทร์",
-  "ผศ.ดร.เพชร อิ่มทองคำ",
-  "ผศ.ดร.สาธิต กระเวนกิจ",
-  "อ.ดร.จักรกฤษณ์ แก้วโยธา",
-  "ผศ.ดร.สายยัญ สายยศ",
-  "ผศ.ดร.ไอศูรย์ กาญจนสุรัตน์",
-  "อ.ดร.พงษ์ศธร จันทร์ยอย",
-  "ผศ.ดร.พุธษดี ศิริแสงตระกูล",
-  "รศ.ดร.อุรฉัตร โคแก้ว",
-  "ผศ.ดร.สิลดา อินทรโสธรฉันท์",
-  "ผศ.ดร.วชิราวุธ ธรรมวิเศษ",
-];
+type Teacher = {
+  _id: string;
+  name: string;
+};
 
 export default function EditClassPage() {
   const router = useRouter();
@@ -58,8 +40,14 @@ export default function EditClassPage() {
   const [openTeacher, setOpenTeacher] = useState(false);
   const [openBranchIndex, setOpenBranchIndex] = useState<number | null>(null);
 
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [loadingTeachers, setLoadingTeachers] = useState(true);
+
   const teacherRef = useRef<HTMLDivElement>(null);
   const branchRef = useRef<HTMLDivElement>(null);
+
+  const [branchOptions, setBranchOptions] = useState<string[]>([]);
+  const [loadingBranches, setLoadingBranches] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,12 +57,19 @@ export default function EditClassPage() {
 
         if (!res.ok) throw new Error(data.message);
 
+        type RawBranch = string | { _id: string; name: string };
+
         setItem({
           className: data.data.className || "",
           classCode: data.data.classCode || "",
           description: data.data.description || "",
-          teacher: data.data.teacher || "",
-          branches: data.data.branches?.length ? data.data.branches : [""],
+          teacher:
+            typeof data.data.teacher === "object"
+              ? data.data.teacher.name
+              : data.data.teacher || "",
+          branches: data.data.branches?.map((b: RawBranch) =>
+            typeof b === "string" ? b : b.name,
+          ) || [""],
         });
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
@@ -86,6 +81,43 @@ export default function EditClassPage() {
 
     fetchData();
   }, [id, showAlert]);
+
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        const res = await fetch("/api/teachers");
+        const data = await res.json();
+
+        if (data.success && Array.isArray(data.data)) {
+          setTeachers(data.data);
+        }
+      } catch (error) {
+      } finally {
+        setLoadingTeachers(false);
+      }
+    };
+
+    fetchTeachers();
+  }, []);
+
+  useEffect(() => {
+    const fetchMajors = async () => {
+      try {
+        const res = await fetch("/api/majors");
+        const data: { success: boolean; data: Major[] } = await res.json();
+
+        if (data.success) {
+          const names = data.data.map((m) => m.name);
+          setBranchOptions(names);
+        }
+      } catch (error) {
+      } finally {
+        setLoadingBranches(false);
+      }
+    };
+
+    fetchMajors();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -233,19 +265,30 @@ export default function EditClassPage() {
                   </button>
 
                   {openTeacher && (
-                    <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg">
-                      {TEACHERS.map((t) => (
-                        <button
-                          key={t}
-                          onClick={() => {
-                            handleChange("teacher", t);
-                            setOpenTeacher(false);
-                          }}
-                          className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 cursor-pointer"
-                        >
-                          {t}
-                        </button>
-                      ))}
+                    <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg max-h-48 overflow-y-auto">
+                      {" "}
+                      {loadingTeachers ? (
+                        <div className="px-4 py-2 text-sm text-gray-400">
+                          กำลังโหลดอาจารย์...
+                        </div>
+                      ) : teachers.length === 0 ? (
+                        <div className="px-4 py-2 text-sm text-gray-400">
+                          ไม่พบข้อมูลอาจารย์
+                        </div>
+                      ) : (
+                        teachers.map((t) => (
+                          <button
+                            key={t._id}
+                            onClick={() => {
+                              handleChange("teacher", t.name);
+                              setOpenTeacher(false);
+                            }}
+                            className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 cursor-pointer"
+                          >
+                            {t.name}
+                          </button>
+                        ))
+                      )}
                     </div>
                   )}
                 </div>
@@ -270,31 +313,41 @@ export default function EditClassPage() {
 
                       {openBranchIndex === i && (
                         <div className="absolute z-10 mt-10 w-full bg-white border border-gray-200 rounded-md shadow-lg">
-                          {BRANCH_OPTIONS.map((opt) => {
-                            const isSelected = item.branches.includes(opt);
+                          {loadingBranches ? (
+                            <div className="px-4 py-2 text-sm text-gray-400">
+                              กำลังโหลดสาขา...
+                            </div>
+                          ) : branchOptions.length === 0 ? (
+                            <div className="px-4 py-2 text-sm text-gray-400">
+                              ไม่พบข้อมูลสาขา
+                            </div>
+                          ) : (
+                            branchOptions.map((opt) => {
+                              const isSelected = item.branches.includes(opt);
 
-                            return (
-                              <button
-                                key={opt}
-                                type="button"
-                                disabled={isSelected}
-                                onClick={() => {
-                                  if (isSelected) return;
+                              return (
+                                <button
+                                  key={opt}
+                                  type="button"
+                                  disabled={isSelected}
+                                  onClick={() => {
+                                    if (isSelected) return;
 
-                                  handleBranchChange(i, opt);
-                                  setOpenBranchIndex(null);
-                                }}
-                                className={`block w-full px-4 py-2 text-left text-sm
-                                ${
-                                  isSelected
-                                  ? "text-gray-400 bg-gray-50 cursor-not-allowed"
-                                  : "hover:bg-gray-100 cursor-pointer"
-                                }`}
-                              >
-                                {opt}
-                              </button>
-                            );
-                          })}
+                                    handleBranchChange(i, opt);
+                                    setOpenBranchIndex(null);
+                                  }}
+                                  className={`block w-full px-4 py-2 text-left text-sm
+                                  ${
+                                    isSelected
+                                      ? "text-gray-400 bg-gray-50 cursor-not-allowed"
+                                      : "hover:bg-gray-100 cursor-pointer"
+                                  }`}
+                                >
+                                  {opt}
+                                </button>
+                              );
+                            })
+                          )}
                         </div>
                       )}
 
@@ -310,7 +363,7 @@ export default function EditClassPage() {
                 <button
                   type="button"
                   onClick={handleAddBranch}
-                  className="mt-2 text-sm text-blue-600 hover:underline"
+                  className="mt-2 text-sm text-blue-600 hover:underline cursor-pointer"
                 >
                   + เพิ่มสาขา
                 </button>

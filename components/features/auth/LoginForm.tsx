@@ -53,8 +53,6 @@ export default function LoginForm() {
 
       const data = await res.json();
 
-      console.log("LOGIN DATA:", data);
-
       if (data.success) {
         if (remember) {
           localStorage.setItem(
@@ -75,7 +73,7 @@ export default function LoginForm() {
         if (role === "admin") {
           router.push("/dashboard");
         } else if (role === "teacher") {
-          router.push("/classes");
+          router.push("/attendance");
         } else {
           showAlert("role ไม่ถูกต้อง", "error");
         }
@@ -83,7 +81,6 @@ export default function LoginForm() {
         showAlert(data.message || "เข้าสู่ระบบไม่สำเร็จ", "error");
       }
     } catch (error) {
-      console.error(error);
       showAlert("เกิดข้อผิดพลาด", "error");
     }
   };

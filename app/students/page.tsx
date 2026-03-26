@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef } from "react";
 import Sidebar from "@/components/layouts/Sidebar";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ChevronDownIcon, DocumentTextIcon } from "@heroicons/react/24/outline";
+import { useRouter } from "next/navigation";
 
 type ClassItem = {
   _id: string;
@@ -22,6 +23,8 @@ type MajorItem = {
 };
 
 export default function StudentsPage() {
+  const router = useRouter();
+
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState("");
@@ -153,154 +156,31 @@ export default function StudentsPage() {
 
         {!loading && !hasData && (
           <div className="flex flex-col h-[85vh] bg-white rounded-2xl shadow-sm">
-            <div className="px-6 pt-6">
+            <div className="px-6 py-4">
               <h1 className="text-2xl font-semibold text-gray-800">Students</h1>
+              <p className="text-sm text-gray-400 mt-1">
+                จัดการรายชื่อนักศึกษาในระบบ
+              </p>
             </div>
 
-            <div className="p-6">
-              <div className="flex flex-col md:flex-row gap-6 bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
-                <div className="flex-1 space-y-4">
-                  <h2 className="text-lg font-semibold text-gray-900">
-                    นำเข้ารายชื่อนักศึกษา
-                  </h2>
-
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div ref={classRef} className="relative">
-                      <label className="text-sm text-gray-700 mb-1 block">
-                        เลือกวิชา
-                      </label>
-
-                      <button
-                        type="button"
-                        onClick={() => setOpenClass((prev) => !prev)}
-                        disabled={loadingClasses}
-                        className="form-input-card text-sm flex items-center justify-between w-full"
-                      >
-                        {selectedClass
-                          ? classes.find((c) => c._id === selectedClass)
-                              ?.displayName
-                          : loadingClasses
-                            ? "กำลังโหลดวิชา..."
-                            : "เลือกวิชา"}
-
-                        <ChevronDownIcon className="w-4 h-4 text-gray-400" />
-                      </button>
-
-                      {openClass && (
-                        <div className="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg border border-gray-200 max-h-48 overflow-y-auto">
-                          {classes.map((cls) => {
-                            const isSelected = selectedClass === cls._id;
-
-                            return (
-                              <button
-                                key={cls._id}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedClass(cls._id);
-                                  setOpenClass(false);
-                                }}
-                                className={`block w-full px-4 py-2 text-left text-sm
-                  ${
-                    isSelected
-                      ? "bg-blue-50 text-blue-600"
-                      : "hover:bg-gray-100"
-                  }`}
-                              >
-                                {cls.displayName}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-
-                    <div ref={majorRef} className="relative">
-                      <label className="text-sm text-gray-700 mb-1 block">
-                        เลือกสาขา
-                      </label>
-
-                      <button
-                        type="button"
-                        onClick={() => setOpenMajor((prev) => !prev)}
-                        className="form-input-card text-sm flex items-center justify-between w-full"
-                      >
-                        {selectedMajor
-                          ? majors.find((m) => m._id === selectedMajor)?.name
-                          : "เลือกสาขา"}
-
-                        <ChevronDownIcon className="w-4 h-4 text-gray-400" />
-                      </button>
-
-                      {openMajor && (
-                        <div className="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg border border-gray-200 max-h-48 overflow-y-auto">
-                          {majors.length === 0 && (
-                            <div className="px-4 py-2 text-sm text-gray-400">
-                              ไม่พบข้อมูลสาขา
-                            </div>
-                          )}
-
-                          {majors.map((m) => {
-                            const isSelected = selectedMajor === m._id;
-
-                            return (
-                              <button
-                                key={m._id}
-                                type="button"
-                                onClick={() => {
-                                  setSelectedMajor(m._id);
-                                  setOpenMajor(false);
-                                }}
-                                className={`block w-full px-4 py-2 text-left text-sm
-              ${isSelected ? "bg-blue-50 text-blue-600" : "hover:bg-gray-100"}`}
-                              >
-                                {m.name}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                    </div>
-
-                    <div>
-                      <label className="text-sm text-gray-700 mb-1 block">
-                        ไฟล์ CSV
-                      </label>
-
-                      <input
-                        type="file"
-                        accept=".csv"
-                        onChange={(e) => setFile(e.target.files?.[0] || null)}
-                        className="block w-full text-sm border rounded-lg p-2 cursor-pointer bg-white"
-                      />
-
-                      {file && (
-                        <p className="text-xs text-gray-500 mt-1">
-                          {file.name}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-
-                  <button
-                    onClick={handleUpload}
-                    disabled={loading}
-                    className="w-full py-2.5 rounded-lg text-sm font-medium bg-blue-600 text-white hover:bg-blue-700 transition"
-                  >
-                    นำเข้าไฟล์
-                  </button>
-
-                  {message && (
-                    <p className="text-sm text-gray-600">{message}</p>
-                  )}
-                </div>
+            <div className="flex flex-1 flex-col items-center justify-center text-center">
+              <div className="mb-4 flex items-center justify-center w-24 h-24 rounded-full bg-gray-100">
+                <DocumentTextIcon className="w-12 h-12 text-gray-400" />
               </div>
-            </div>
-          </div>
-        )}
 
-        {!loading && hasData && (
-          <div className="bg-white rounded-2xl p-6 shadow-sm">
-            <h1 className="text-xl font-semibold mb-4">รายชื่อนักศึกษา</h1>
+              <p className="text-sm text-gray-400">ยังไม่มีข้อมูลนักศึกษา</p>
+
+              <button
+                onClick={() => {
+                  document
+                    .getElementById("import-section")
+                    ?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="mt-3 px-6 py-2 rounded-md bg-blue-500 text-white text-sm hover:bg-blue-600"
+              >
+                + นำเข้ารายชื่อ
+              </button>
+            </div>
           </div>
         )}
       </div>

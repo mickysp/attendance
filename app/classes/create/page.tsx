@@ -12,30 +12,49 @@ type ClassItem = {
   className: string;
   classCode: string;
   description: string;
-  teacher: string;
+  teacher: Teacher | null;
   branches: string[];
 };
 
-const BRANCH_OPTIONS = [
-  "เทคโนโลยีสารสนเทศและนวัตกรรมอัจฉริยะ",
-  "วิทยาการคอมพิวเตอร์",
-  "ภูมิสารสนเทศศาสตร์",
-  "ปัญญาประดิษฐ์",
-  "ความมั่นคงปลอดภัยไซเบอร์",
-];
+type Major = {
+  _id: string;
+  name: string;
+};
+
+type Teacher = {
+  _id: string;
+  name: string;
+};
 
 export default function CreateClassPage() {
   const router = useRouter();
   const { showAlert } = useAlert();
+  const [loading, setLoading] = useState(false);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
   const branchRef = useRef<HTMLDivElement>(null);
   const ref = useRef<HTMLDivElement>(null);
   const { showConfirm } = useConfirm();
 
+  const [branchOptions, setBranchOptions] = useState<string[]>([]);
+  const [loadingBranches, setLoadingBranches] = useState(true);
+
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [loadingTeachers, setLoadingTeachers] = useState(true);
+
   const [openBranchIndex, setOpenBranchIndex] = useState<{
     classIndex: number;
     branchIndex: number;
   } | null>(null);
+
+  const [classes, setClasses] = useState<ClassItem[]>([
+    {
+      className: "",
+      classCode: "",
+      teacher: null,
+      description: "",
+      branches: [""],
+    },
+  ]);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -54,19 +73,45 @@ export default function CreateClassPage() {
     };
   }, []);
 
-  const [classes, setClasses] = useState<ClassItem[]>([
-    {
-      className: "",
-      classCode: "",
-      teacher: "",
-      description: "",
-      branches: [""],
-    },
-  ]);
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      try {
+        const res = await fetch("/api/teachers");
+        const data = await res.json();
 
-  const [loading, setLoading] = useState(false);
+        if (data.success && Array.isArray(data.data)) {
+          setTeachers(data.data);
+        }
+      } catch (error) {
+      } finally {
+        setLoadingTeachers(false);
+      }
+    };
 
-  type StringKeys = "className" | "classCode" | "description" | "teacher";
+    fetchTeachers();
+  }, []);
+
+  useEffect(() => {
+    const fetchMajors = async () => {
+      try {
+        const res = await fetch("/api/majors");
+
+        const data: { success: boolean; data: Major[] } = await res.json();
+
+        if (data.success && Array.isArray(data.data)) {
+          const names = data.data.map((m) => m.name);
+          setBranchOptions(names);
+        }
+      } catch (error) {
+      } finally {
+        setLoadingBranches(false);
+      }
+    };
+
+    fetchMajors();
+  }, []);
+
+  type StringKeys = "className" | "classCode" | "description";
 
   const handleChange = (index: number, key: StringKeys, value: string) => {
     const updated = [...classes];
@@ -80,7 +125,7 @@ export default function CreateClassPage() {
       {
         className: "",
         classCode: "",
-        teacher: "",
+        teacher: null,
         description: "",
         branches: [""],
       },
@@ -241,43 +286,37 @@ export default function CreateClassPage() {
                         }
                         className="form-input-card text-sm flex items-center justify-between w-full"
                       >
-                        {item.teacher || "เลือกอาจารย์"}
+                        {item.teacher?.name || "เลือกอาจารย์"}{" "}
                         <ChevronDownIcon className="w-4 h-4 text-gray-400" />
                       </button>
 
                       {openIndex === index && (
                         <div className="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg border border-gray-200 max-h-48 overflow-y-auto">
-                          {[
-                            "รศ.ดร.งามนิจ อาจอินทร์",
-                            "รศ.ดร.วรารัตน์ สงฆ์แป้น",
-                            "อ.ดร.วรัญญา วรรณศรี",
-                            "ผศ.ดร.มัลลิกา วัฒนะ",
-                            "ผศ.ดร.ปวีณา วันชัย",
-                            "ผศ.ดร.สุมณฑา เกษมวิลาศ",
-                            "ศ.ดร.จักรชัย โสอินทร์",
-                            "ผศ.ดร.เพชร อิ่มทองคำ",
-                            "ผศ.ดร.สาธิต กระเวนกิจ",
-                            "อ.ดร.จักรกฤษณ์ แก้วโยธา",
-                            "ผศ.ดร.สายยัญ สายยศ",
-                            "ผศ.ดร.ไอศูรย์ กาญจนสุรัตน์",
-                            "อ.ดร.พงษ์ศธร จันทร์ยอย",
-                            "ผศ.ดร.พุธษดี ศิริแสงตระกูล",
-                            "รศ.ดร.อุรฉัตร โคแก้ว",
-                            "ผศ.ดร.สิลดา อินทรโสธรฉันท์",
-                            "ผศ.ดร.วชิราวุธ ธรรมวิเศษ",
-                          ].map((teacher) => (
-                            <button
-                              key={teacher}
-                              type="button"
-                              onClick={() => {
-                                handleChange(index, "teacher", teacher);
-                                setOpenIndex(null);
-                              }}
-                              className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 cursor-pointer"
-                            >
-                              {teacher}
-                            </button>
-                          ))}
+                          {loadingTeachers ? (
+                            <div className="px-4 py-2 text-sm text-gray-400">
+                              กำลังโหลดอาจารย์...
+                            </div>
+                          ) : teachers.length === 0 ? (
+                            <div className="px-4 py-2 text-sm text-gray-400">
+                              ไม่พบข้อมูลอาจารย์
+                            </div>
+                          ) : (
+                            teachers.map((t) => (
+                              <button
+                                key={t._id}
+                                type="button"
+                                onClick={() => {
+                                  const updated = [...classes];
+                                  updated[index].teacher = t;
+                                  setClasses(updated);
+                                  setOpenIndex(null);
+                                }}
+                                className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 cursor-pointer"
+                              >
+                                {t.name}
+                              </button>
+                            ))
+                          )}
                         </div>
                       )}
                     </div>
@@ -308,31 +347,42 @@ export default function CreateClassPage() {
                           {openBranchIndex?.classIndex === index &&
                             openBranchIndex?.branchIndex === bIndex && (
                               <div className="absolute z-10 mt-10 w-full rounded-md bg-white shadow-lg border border-gray-200 max-h-48 overflow-y-auto">
-                                {BRANCH_OPTIONS.map((b) => {
-                                  const isSelected = item.branches.includes(b);
+                                {loadingBranches ? (
+                                  <div className="px-4 py-2 text-sm text-gray-400">
+                                    กำลังโหลดสาขา...
+                                  </div>
+                                ) : branchOptions.length === 0 ? (
+                                  <div className="px-4 py-2 text-sm text-gray-400">
+                                    ไม่พบข้อมูลสาขา
+                                  </div>
+                                ) : (
+                                  branchOptions.map((b) => {
+                                    const isSelected =
+                                      item.branches.includes(b);
 
-                                  return (
-                                    <button
-                                      key={b}
-                                      type="button"
-                                      disabled={isSelected}
-                                      onClick={() => {
-                                        if (isSelected) return;
+                                    return (
+                                      <button
+                                        key={b}
+                                        type="button"
+                                        disabled={isSelected}
+                                        onClick={() => {
+                                          if (isSelected) return;
 
-                                        handleBranchChange(index, bIndex, b);
-                                        setOpenBranchIndex(null);
-                                      }}
-                                      className={`block w-full px-4 py-2 text-left text-sm
-                                      ${
-                                        isSelected
-                                          ? "text-gray-400 bg-gray-50 cursor-not-allowed"
-                                          : "hover:bg-gray-100 cursor-pointer"
-                                      }`}
-                                    >
-                                      {b}
-                                    </button>
-                                  );
-                                })}
+                                          handleBranchChange(index, bIndex, b);
+                                          setOpenBranchIndex(null);
+                                        }}
+                                        className={`block w-full px-4 py-2 text-left text-sm
+                                            ${
+                                              isSelected
+                                                ? "text-gray-400 bg-gray-50 cursor-not-allowed"
+                                                : "hover:bg-gray-100 cursor-pointer"
+                                            }`}
+                                      >
+                                        {b}
+                                      </button>
+                                    );
+                                  })
+                                )}
                               </div>
                             )}
 
