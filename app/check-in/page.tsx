@@ -384,11 +384,11 @@ export default function CheckInPage() {
                             setOpenSection(false);
                           }}
                           className={`block w-full px-4 py-2 text-left text-sm cursor-pointer
-                  ${
-                    isSelected
-                      ? "bg-blue-50 text-blue-600"
-                      : "hover:bg-gray-100"
-                  }`}
+                          ${
+                            isSelected
+                              ? "bg-blue-50 text-blue-600"
+                              : "hover:bg-gray-100"
+                          }`}
                         >
                           {sec.label}
                         </button>
