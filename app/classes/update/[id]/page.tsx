@@ -49,6 +49,8 @@ export default function EditClassPage() {
   const [branchOptions, setBranchOptions] = useState<string[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(true);
 
+  const [initialItem, setInitialItem] = useState<ClassItem | null>(null);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -71,6 +73,22 @@ export default function EditClassPage() {
             typeof b === "string" ? b : b.name,
           ) || [""],
         });
+
+        const mapped = {
+          className: data.data.className || "",
+          classCode: data.data.classCode || "",
+          description: data.data.description || "",
+          teacher:
+            typeof data.data.teacher === "object"
+              ? data.data.teacher.name
+              : data.data.teacher || "",
+          branches: data.data.branches?.map((b: RawBranch) =>
+            typeof b === "string" ? b : b.name,
+          ) || [""],
+        };
+
+        setItem(mapped);
+        setInitialItem(mapped);
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
         showAlert(message, "error");
@@ -81,6 +99,8 @@ export default function EditClassPage() {
 
     fetchData();
   }, [id, showAlert]);
+
+  const isDirty = JSON.stringify(item) !== JSON.stringify(initialItem);
 
   useEffect(() => {
     const fetchTeachers = async () => {
@@ -399,7 +419,13 @@ export default function EditClassPage() {
 
               <button
                 onClick={handleSubmit}
-                className="px-5 py-2.5 rounded-md bg-[var(--primary)] text-white text-sm hover:bg-[var(--primary-hover)] cursor-pointer"
+                disabled={!isDirty}
+                className={`px-5 py-2.5 rounded-md text-white text-sm transition
+                ${
+                !isDirty
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-[var(--primary)] hover:bg-[var(--primary-hover)] cursor-pointer"
+                }`}
               >
                 บันทึก
               </button>

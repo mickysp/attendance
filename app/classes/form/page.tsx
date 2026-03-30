@@ -110,6 +110,52 @@ export default function QRPage() {
     }
   };
 
+  const handleDownloadQR = () => {
+    const svg = document.querySelector(".qr-code svg");
+    if (!svg) return;
+
+    const serializer = new XMLSerializer();
+    const svgString = serializer.serializeToString(svg);
+
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const img = new Image();
+
+    const svgBlob = new Blob([svgString], {
+      type: "image/svg+xml;charset=utf-8",
+    });
+    const url = URL.createObjectURL(svgBlob);
+
+    img.onload = () => {
+      const size = 500;
+      const padding = 30;
+      canvas.width = size;
+      canvas.height = size;
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, size, size);
+
+      ctx.drawImage(
+        img,
+        padding,
+        padding,
+        size - padding * 2,
+        size - padding * 2,
+      );
+
+      URL.revokeObjectURL(url);
+
+      const link = document.createElement("a");
+      link.download = `qr-checkin-${classId || "file"}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    };
+
+    img.src = url;
+  };
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar />
@@ -193,7 +239,7 @@ export default function QRPage() {
                   </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex flex-col h-full">
                   {tab === "qr" && (
                     <>
                       <div className="mb-6">
@@ -217,10 +263,11 @@ export default function QRPage() {
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-center gap-3 mt-6">
-                        <div className="relative p-5 border rounded-2xl shadow-sm bg-white">
-                          <QRCode value={link || "loading"} size={280} />
-
+                      <div className="flex-1 flex flex-col items-center justify-center gap-3">
+                        {" "}
+                        <div className="qr-code relative p-5 border rounded-2xl shadow-sm bg-white">
+                          {" "}
+                          <QRCode value={link || "loading"} size={300} />
                           <button
                             onClick={() => setOpenQR(true)}
                             className="absolute top-2 right-2 bg-white border rounded-md p-1 shadow hover:bg-gray-100 cursor-pointer"
@@ -228,9 +275,8 @@ export default function QRPage() {
                             <ArrowsPointingOutIcon className="w-4 h-4 text-gray-600" />
                           </button>
                         </div>
-
                         <p className="text-sm text-gray-500 text-center">
-                          ให้นักศึกษาสแกน QR เพื่อเช็คชื่อเข้าเรียน
+                          QR Code เช็คชื่อเข้าเรียน
                         </p>
                       </div>
                     </>
@@ -269,28 +315,38 @@ export default function QRPage() {
           </div>
         )}
       </div>
+
       {openQR && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 font-noto"
           onClick={() => setOpenQR(false)}
         >
           <div
-            className="bg-white rounded-2xl p-14 relative shadow-xl"
+            className="bg-white rounded-2xl shadow-xl w-full max-w-[700px] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <button
-              onClick={() => setOpenQR(false)}
-              className="absolute top-3 right-3 p-1 rounded-md hover:bg-gray-100 cursor-pointer"
-            >
-              <XMarkIcon className="w-5 h-5 text-gray-600" />
-            </button>
+            <div className="flex items-center justify-between px-6 py-4">
+              <h2 className="text-lg font-semibold text-gray-800">
+                QR Code เช็คชื่อ
+              </h2>
 
-            <div className="flex flex-col items-center gap-4">
-              <QRCode value={link || "loading"} size={470} />
+              <button
+                onClick={() => setOpenQR(false)}
+                className="p-1 rounded-md hover:bg-gray-100 transition cursor-pointer"
+              >
+                <XMarkIcon className="w-6 h-6 text-gray-600" />
+              </button>
+            </div>
 
-              <p className="text-sm text-gray-500">
-                สแกนเพื่อเช็คชื่อเข้าเรียน
-              </p>
+            <div className="p-8 flex flex-col items-center gap-6">
+              <QRCode value={link || "loading"} size={480} />
+
+              <button
+                onClick={handleDownloadQR}
+                className="px-6 py-2 rounded-xl border border-blue-400 text-blue-400 font-semibold hover:bg-blue-50 transition cursor-pointer"
+              >
+                บันทึก QR Code
+              </button>
             </div>
           </div>
         </div>
