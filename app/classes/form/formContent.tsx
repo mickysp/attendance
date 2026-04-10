@@ -329,7 +329,6 @@ export default function QRPage() {
               <h2 className="text-lg font-semibold text-gray-800">
                 QR Code เช็คชื่อ
               </h2>
-
               <button
                 onClick={() => setOpenQR(false)}
                 className="p-1 rounded-md hover:bg-gray-100 transition cursor-pointer"
