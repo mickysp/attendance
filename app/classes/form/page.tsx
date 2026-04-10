@@ -144,11 +144,11 @@ export default function QRPage() {
         size - padding * 2,
         size - padding * 2,
       );
-
+    
       URL.revokeObjectURL(url);
 
       const link = document.createElement("a");
-      link.download = `qr-checkin-${classId || "file"}.png`;
+      link.download = `เช็คชื่อวิชา ${className || "ไม่ทราบชื่อวิชา"}.png`;
       link.href = canvas.toDataURL("image/png");
       link.click();
     };
@@ -208,10 +208,10 @@ export default function QRPage() {
                 <div className="flex gap-6 mb-6 mt-2 border-b border-gray-200">
                   <button
                     onClick={() => setTab("qr")}
-                    className={`relative pb-3 text-sm font-medium transition-all duration-200 ${
+                    className={`relative pb-3 text-sm font-medium transition-all duration-200 cursor-pointer ${
                       tab === "qr"
                         ? "text-blue-600"
-                        : "text-gray-500 hover:text-gray-700 cursor-pointer"
+                        : "text-gray-500 hover:text-gray-700"
                     }`}
                   >
                     ลิงก์เช็คชื่อ
@@ -224,10 +224,10 @@ export default function QRPage() {
 
                   <button
                     onClick={() => setTab("form")}
-                    className={`relative pb-3 text-sm font-medium transition-all duration-200 ${
+                    className={`relative pb-3 text-sm font-medium transition-all duration-200 cursor-pointer ${
                       tab === "form"
                         ? "text-blue-600"
-                        : "text-gray-500 hover:text-gray-700 cursor-pointer"
+                        : "text-gray-500 hover:text-gray-700"
                     }`}
                   >
                     ตัวอย่างแบบฟอร์มเช็คชื่อ
@@ -265,12 +265,12 @@ export default function QRPage() {
 
                       <div className="flex-1 flex flex-col items-center justify-center gap-3">
                         {" "}
-                        <div className="qr-code relative p-5 border rounded-2xl shadow-sm bg-white">
+                        <div className="qr-code relative p-5 border border-gray-300 rounded-2xl bg-white">
                           {" "}
                           <QRCode value={link || "loading"} size={300} />
                           <button
                             onClick={() => setOpenQR(true)}
-                            className="absolute top-2 right-2 bg-white border rounded-md p-1 shadow hover:bg-gray-100 cursor-pointer"
+                            className="absolute top-2 right-2 bg-white border border-gray-300 rounded-md p-1 hover:bg-gray-100 cursor-pointer"
                           >
                             <ArrowsPointingOutIcon className="w-4 h-4 text-gray-600" />
                           </button>
@@ -322,10 +322,10 @@ export default function QRPage() {
           onClick={() => setOpenQR(false)}
         >
           <div
-            className="bg-white rounded-2xl shadow-xl w-full max-w-[700px] overflow-hidden"
+            className="bg-white rounded-3xl shadow-xl w-full max-w-[800px] overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between px-6 py-4">
+            <div className="flex items-center justify-between px-6 pt-4">
               <h2 className="text-lg font-semibold text-gray-800">
                 QR Code เช็คชื่อ
               </h2>
@@ -339,8 +339,9 @@ export default function QRPage() {
             </div>
 
             <div className="p-8 flex flex-col items-center gap-6">
-              <QRCode value={link || "loading"} size={480} />
-
+              <div className="border border-gray-300 p-4 rounded-xl">
+                <QRCode value={link || "loading"} size={480} />
+              </div>
               <button
                 onClick={handleDownloadQR}
                 className="px-6 py-2 rounded-xl border border-blue-400 text-blue-400 font-semibold hover:bg-blue-50 transition cursor-pointer"
