@@ -155,7 +155,7 @@ export default function ClassesPage() {
             </div>
 
             <div className="flex flex-1 flex-col items-center justify-center text-center">
-              <div className="mb-4 flex items-center justify-center w-24 h-24 rounded-full bg-gray-100">
+              <div className="mb-3 flex items-center justify-center w-24 h-24 rounded-full bg-gray-100">
                 <DocumentTextIcon className="w-12 h-12 text-gray-400" />
               </div>
 
@@ -165,7 +165,7 @@ export default function ClassesPage() {
 
               <button
                 onClick={() => router.push("/classes/create")}
-                className="mt-2 px-6 py-2 rounded-md bg-blue-500 text-white text-base hover:bg-blue-600 cursor-pointer"
+                className="mt-3 px-6 py-2 rounded-md bg-blue-500 text-white text-base hover:bg-blue-600 cursor-pointer"
               >
                 + เพิ่มวิชา
               </button>

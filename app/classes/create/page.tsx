@@ -206,6 +206,15 @@ export default function CreateClassPage() {
     }
   };
 
+  const isFormValid = classes.every((item) => {
+    return (
+      item.className.trim() !== "" &&
+      item.classCode.trim() !== "" &&
+      item.teacher !== null &&
+      item.branches.some((b) => b.trim() !== "")
+    );
+  });
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar />
@@ -301,21 +310,30 @@ export default function CreateClassPage() {
                               ไม่พบข้อมูลอาจารย์
                             </div>
                           ) : (
-                            teachers.map((t) => (
-                              <button
-                                key={t._id}
-                                type="button"
-                                onClick={() => {
-                                  const updated = [...classes];
-                                  updated[index].teacher = t;
-                                  setClasses(updated);
-                                  setOpenIndex(null);
-                                }}
-                                className="block w-full px-4 py-2 text-left text-sm hover:bg-gray-100 cursor-pointer"
-                              >
-                                {t.name}
-                              </button>
-                            ))
+                            teachers.map((t) => {
+                              const isSelected =
+                                classes[index].teacher?._id === t._id;
+
+                              return (
+                                <button
+                                  key={t._id}
+                                  onClick={() => {
+                                    const updated = [...classes];
+                                    updated[index].teacher = t;
+                                    setClasses(updated);
+                                    setOpenIndex(null);
+                                  }}
+                                  className={`block w-full px-4 py-2 text-left text-sm flex items-center justify-between cursor-pointer
+                                  ${
+                                    isSelected
+                                      ? "bg-blue-50 text-blue-600 font-medium"
+                                      : "hover:bg-gray-100"
+                                  }`}
+                                >
+                                  <span>{t.name}</span>
+                                </button>
+                              );
+                            })
                           )}
                         </div>
                       )}
@@ -447,8 +465,13 @@ export default function CreateClassPage() {
                 onClick={() =>
                   showConfirm("คุณต้องการบันทึกข้อมูลใช่หรือไม่", handleSubmit)
                 }
-                disabled={loading}
-                className="px-5 py-2.5 rounded-md bg-[var(--primary)] text-white text-sm hover:bg-[var(--primary-hover)] disabled:opacity-50 cursor-pointer"
+                disabled={loading || !isFormValid}
+                className={`px-5 py-2.5 rounded-md text-white text-sm transition
+                ${
+                  loading || !isFormValid
+                  ? "bg-gray-400"
+                  : "bg-[var(--primary)] hover:bg-[var(--primary-hover)] cursor-pointer"
+                }`}
               >
                 {loading ? "กำลังบันทึก..." : "บันทึก"}
               </button>

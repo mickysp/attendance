@@ -90,22 +90,31 @@ export default function ClassFilter({ data, onChange }: Props) {
               }}
               className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 text-sm cursor-pointer"
             >
-              ทุกสาขา
+              ทั้งหมด
             </button>
 
-            {branchOptions.map((b) => (
-              <button
-                key={b}
-                onClick={() => {
-                  setBranch(b);
-                  handleChange(keyword, b);
-                  setOpen(false);
-                }}
-                className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 text-sm cursor-pointer"
-              >
-                {b}
-              </button>
-            ))}
+            {branchOptions.map((b) => {
+              const isSelected = branch === b;
+
+              return (
+                <button
+                  key={b}
+                  onClick={() => {
+                    setBranch(b);
+                    handleChange(keyword, b);
+                    setOpen(false);
+                  }}
+                  className={`block w-full px-3 py-2 text-left text-sm flex items-center justify-between
+                  ${
+                    isSelected
+                      ? "bg-blue-50 text-blue-600 font-medium"
+                      : "hover:bg-gray-100"
+                  } cursor-pointer`}
+                >
+                  <span>{b}</span>
+                </button>
+              );
+            })}
           </div>
         )}
       </div>
