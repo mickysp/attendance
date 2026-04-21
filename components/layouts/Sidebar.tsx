@@ -60,7 +60,7 @@ export default function Sidebar() {
   return (
     <aside
       className={`${
-        collapsed ? "w-20" : "w-70"
+        collapsed ? "w-[70px]" : "w-[280px]"
       } h-screen overflow-y-auto bg-white border-r border-gray-200 p-4 flex flex-col justify-between transition-all duration-300 font-noto`}
     >
       <div>
@@ -72,8 +72,8 @@ export default function Sidebar() {
               </div>
 
               <div>
-                <h1 className="text-lg font-semibold">Attendance</h1>
-                <p className="text-xs text-gray-500 font-noto">
+                <h1 className="text-lg font-semibold">Attendy</h1>
+                <p className="text-xs text-gray-500">
                   Management System
                 </p>
               </div>
@@ -122,36 +122,20 @@ export default function Sidebar() {
             active={pathname.startsWith("/students")}
             onClick={() => router.push("/students")}
           />
-
-          <SidebarItem
-            icon={<ChartBarIcon />}
-            label="Reports"
-            collapsed={collapsed}
-            active={pathname === "/reports"}
-            onClick={() => router.push("/reports")}
-          />
-
-          <SidebarItem
-            icon={<CalendarDaysIcon />}
-            label="Leave"
-            collapsed={collapsed}
-            active={pathname === "/leave"}
-            onClick={() => router.push("/leave")}
-          />
-
-          <SidebarItem
-            icon={<Cog6ToothIcon />}
-            label="Settings"
-            collapsed={collapsed}
-            active={pathname === "/settings"}
-            onClick={() => router.push("/settings")}
-          />
         </nav>
       </div>
 
-      <div className="pt-4 border-t border-gray-200 font-noto">
-        <div className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50">
-          <div className="flex items-center gap-3">
+      <div className="pt-4 border-t border-gray-200">
+        <div
+          className={`flex items-center ${
+            collapsed ? "justify-center" : "justify-between"
+          } px-3 py-2 rounded-lg bg-gray-50`}
+        >
+          <div
+            className={`flex items-center ${
+              collapsed ? "justify-center" : "gap-3"
+            }`}
+          >
             <div className="h-9 w-9 rounded-full bg-gray-300 flex items-center justify-center text-sm font-semibold">
               {user.fullname ? user.fullname.charAt(0) : "?"}
             </div>
@@ -201,14 +185,19 @@ function SidebarItem({
     <div
       onClick={onClick}
       title={collapsed ? label : ""}
-      className={`flex items-center gap-3 px-3 py-3 rounded-lg cursor-pointer transition
-        ${
-          active
-            ? "bg-blue-100 text-blue-600 font-medium"
-            : "hover:bg-gray-100 text-gray-700"
-        }`}
+      className={`flex items-center ${
+        collapsed ? "justify-center px-2" : "gap-3 px-3"
+      } py-3 rounded-lg cursor-pointer transition-all duration-200
+      ${
+        active
+          ? "bg-blue-100 text-blue-600 font-medium"
+          : "hover:bg-gray-100 text-gray-700"
+      }`}
     >
-      <span className="h-5 w-5">{icon}</span>
+      <span className={`${collapsed ? "h-6 w-6" : "h-5 w-5"}`}>
+        {icon}
+      </span>
+
       {!collapsed && label}
     </div>
   );

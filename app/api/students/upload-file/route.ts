@@ -1,60 +1,70 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { ObjectId } from "mongodb";
+import { ObjectId, Document } from "mongodb";
 import * as XLSX from "xlsx";
 
-type ExcelRow = Record<string, unknown>;
+export const runtime = "nodejs";
+
+type ExcelRow = Record<string, string | number | undefined>;
+
+type ClassDoc = Document & {
+  _id: ObjectId;
+  name?: string;
+  class_name?: string;
+  className?: string;
+  courseName?: string;
+};
+
+type MajorDoc = Document & {
+  _id: ObjectId;
+  name: string;
+};
 
 type StudentDoc = {
   studentId: string;
   fullName: string;
   email?: string;
   classId: ObjectId;
+  className: string;
   section: string;
+  major: string;
+  academicYear: number;
   createdAt: Date;
 };
 
-type ImportError = {
+type ErrorItem = {
   row: ExcelRow;
   message: string;
 };
 
-const normalizeKey = (key: string): string =>
-  key.trim().toLowerCase();
+const normalize = (text: unknown): string =>
+  String(text || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
 
-const getValue = (row: ExcelRow, keys: string[]): string => {
-  for (const key of Object.keys(row)) {
-    const normalized = normalizeKey(key);
+const getClassName = (c: ClassDoc): string =>
+  c.name || c.class_name || c.className || c.courseName || "";
 
-    if (keys.includes(normalized)) {
-      const value = row[key];
-
-      if (typeof value === "string" || typeof value === "number") {
-        return String(value).trim();
-      }
-
-      return "";
-    }
+const getString = (value: unknown): string => {
+  if (typeof value === "string" || typeof value === "number") {
+    return String(value).trim();
   }
   return "";
 };
 
-const isValidStudentId = (id: string): boolean =>
-  /^\d{9}-\d$/.test(id);
-
-const isValidName = (name: string): boolean =>
-  /^(นาย|นาง|นางสาว)\s?.+/.test(name);
-
-const isValidEmail = (email: string): boolean =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+const getAcademicYear = (): number => {
+  return new Date().getFullYear() + 543;
+};
 
 export async function POST(req: Request) {
   try {
     const formData = await req.formData();
 
-    const file = formData.get("file") as File;
-    const classId = formData.get("classId") as string;
-    const section = formData.get("section") as string;
+    const file = formData.get("file") as File | null;
+    const classId = String(formData.get("classId") || "");
+    const section = String(formData.get("section") || "");
+    const majorNameInput = String(formData.get("major") || "").trim();
 
     if (!file) {
       return NextResponse.json(
@@ -77,13 +87,30 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!majorNameInput) {
+      return NextResponse.json(
+        { success: false, message: "กรุณาเลือกสาขา" },
+        { status: 400 }
+      );
+    }
+
     const bytes = await file.arrayBuffer();
-    const workbook = XLSX.read(bytes);
+    const fileBuffer = Buffer.from(bytes);
+
+    let workbook;
+    try {
+      workbook = XLSX.read(fileBuffer);
+    } catch {
+      return NextResponse.json(
+        { success: false, message: "ไฟล์ Excel ไม่ถูกต้อง" },
+        { status: 400 }
+      );
+    }
 
     const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const jsonData = XLSX.utils.sheet_to_json<ExcelRow>(sheet);
+    const rows = XLSX.utils.sheet_to_json<ExcelRow>(sheet);
 
-    if (jsonData.length === 0) {
+    if (!rows.length) {
       return NextResponse.json(
         { success: false, message: "ไฟล์ไม่มีข้อมูล" },
         { status: 400 }
@@ -94,115 +121,81 @@ export async function POST(req: Request) {
     const db = client.db("attendance");
 
     const studentsCol = db.collection<StudentDoc>("students");
-    const classes = db.collection("classes");
+    const majorsCol = db.collection<MajorDoc>("majors");
+    const classesCol = db.collection<ClassDoc>("classes");
 
     const classObjectId = new ObjectId(classId);
 
-    const classData = await classes.findOne({ _id: classObjectId });
+    const classExists = await classesCol.findOne({
+      _id: classObjectId,
+    });
 
-    if (!classData) {
+    if (!classExists) {
       return NextResponse.json(
         { success: false, message: "ไม่พบวิชา" },
         { status: 404 }
       );
     }
 
-    const insertData: StudentDoc[] = [];
-    const errors: ImportError[] = [];
-    let skipped = 0;
+    const classDisplayName = getClassName(classExists);
 
-    for (const row of jsonData) {
-      const studentId = getValue(row, [
-        "studentid",
-        "student id",
-        "รหัสนักศึกษา",
-      ]);
+    const allMajors = await majorsCol.find().toArray();
 
-      const fullNameRaw = getValue(row, [
-        "fullname",
-        "full name",
-        "ชื่อ-นามสกุล",
-        "ชื่อ",
-      ]);
+    const majorExists = allMajors.find(
+      (m) =>
+        normalize(m.name) === normalize(majorNameInput) ||
+        normalize(m.name).includes(normalize(majorNameInput))
+    );
 
-      const email = getValue(row, [
-        "email",
-        "e-mail",
-        "อีเมล",
-      ]);
-
-      const normalizedName = fullNameRaw.replace(
-        /^(นาย|นาง|นางสาว)(\S)/,
-        "$1 $2"
+    if (!majorExists) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "ไม่พบสาขานี้",
+          debug: allMajors.map((m) => m.name),
+        },
+        { status: 404 }
       );
+    }
 
-      if (!studentId || !normalizedName) {
-        errors.push({
-          row,
-          message: "ไม่พบ column ที่รองรับ (ชื่อ / รหัส)",
-        });
+    const academicYear = getAcademicYear();
+
+    const errors: ErrorItem[] = [];
+    const validStudents: StudentDoc[] = [];
+
+    for (const row of rows) {
+      const studentId = getString(row["รหัสนักศึกษา"]);
+      const fullName = getString(row["ชื่อ-นามสกุล"]);
+      let email = getString(row["email"]);
+
+      if (
+        !email ||
+        ["null", "undefined", "-", ""].includes(email.toLowerCase())
+      ) {
+        email = "";
+      }
+
+      if (!studentId && !fullName) continue;
+
+      if (!studentId || !fullName) {
+        errors.push({ row, message: "ข้อมูลไม่ครบ" });
         continue;
       }
 
-      if (!isValidStudentId(studentId)) {
-        errors.push({
-          row,
-          message: `รหัส ${studentId} ไม่ถูกต้อง`,
-        });
-        continue;
-      }
-
-      if (!isValidName(normalizedName)) {
-        errors.push({
-          row,
-          message: `ชื่อ ${normalizedName} ไม่ถูกต้อง`,
-        });
-        continue;
-      }
-
-      if (email && !isValidEmail(email)) {
-        errors.push({
-          row,
-          message: `email ${email} ไม่ถูกต้อง`,
-        });
-        continue;
-      }
-
-      const cleanName = normalizedName.replace(/\s+/g, " ");
-
-      const exists = await studentsCol.findOne({
-        $or: [
-          {
-            studentId,
-            classId: classObjectId,
-          },
-          ...(email
-            ? [
-                {
-                  email,
-                  classId: classObjectId,
-                },
-              ]
-            : []),
-        ],
-      });
-
-      if (exists) {
-        skipped++;
-        continue;
-      }
-
-      insertData.push({
+      validStudents.push({
         studentId,
-        fullName: cleanName,
+        fullName,
         email: email || undefined,
         classId: classObjectId,
+        className: classDisplayName,
         section,
+        major: majorExists.name,
+        academicYear,
         createdAt: new Date(),
       });
     }
 
-    if (insertData.length === 0) {
+    if (!validStudents.length) {
       return NextResponse.json(
         {
           success: false,
@@ -213,25 +206,53 @@ export async function POST(req: Request) {
       );
     }
 
-    const result = await studentsCol.insertMany(insertData);
+    const studentIds = validStudents.map((s) => s.studentId);
 
-    return NextResponse.json(
-      {
-        success: true,
-        message: `เพิ่มสำเร็จ ${result.insertedCount} รายการ`,
-        skipped,
-        errors,
-      },
-      { status: 201 }
+    const existing = await studentsCol
+      .find({
+        classId: classObjectId,
+        section,
+        academicYear,
+        studentId: { $in: studentIds },
+      })
+      .toArray();
+
+    const existingIds = new Set(existing.map((e) => e.studentId));
+
+    const finalInsert = validStudents.filter(
+      (s) => !existingIds.has(s.studentId)
     );
-  } catch (error: unknown) {
-    console.error("UPLOAD FILE ERROR:", error);
 
+    if (!finalInsert.length) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "ข้อมูลซ้ำทั้งหมด",
+          errors,
+        },
+        { status: 400 }
+      );
+    }
+
+    const result = await studentsCol.insertMany(finalInsert);
+
+    return NextResponse.json({
+      success: true,
+      message: `เพิ่มสำเร็จ ${result.insertedCount} รายการ`,
+      skipped: validStudents.length - finalInsert.length,
+      errors,
+      preview: finalInsert.slice(0, 5),
+      class: classDisplayName,
+      major: majorExists.name,
+      academicYear,
+    });
+
+  } catch (error) {
     return NextResponse.json(
       {
         success: false,
         message:
-          error instanceof Error ? error.message : "Unknown error",
+          error instanceof Error ? error.message : "unknown error",
       },
       { status: 500 }
     );

@@ -165,7 +165,7 @@ export default function ClassesPage() {
 
               <button
                 onClick={() => router.push("/classes/create")}
-                className="mt-3 px-6 py-2 rounded-md bg-blue-500 text-white text-base hover:bg-blue-600 cursor-pointer"
+                className="px-5 py-2.5 rounded-md text-sm bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] flex items-center gap-2 shadow-sm cursor-pointer"
               >
                 + เพิ่มวิชา
               </button>

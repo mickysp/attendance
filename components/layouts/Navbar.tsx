@@ -11,7 +11,7 @@ export default function Navbar() {
           href="/"
           className="text-2xl font-semibold tracking-tight text-gray-900"
         >
-          Attendance
+          Attendy
           <span className="text-blue-600">.</span>
         </Link>
 

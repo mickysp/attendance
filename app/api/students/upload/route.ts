@@ -11,6 +11,7 @@ type IncomingStudent = {
 type UploadPayload = {
   classId?: string;
   section?: string;
+  major?: string;
   students?: IncomingStudent[];
 };
 
@@ -19,7 +20,10 @@ type StudentDoc = {
   fullName: string;
   email?: string;
   classId: ObjectId;
+  className: string;
   section: string;
+  major: string;
+  academicYear: number;
   createdAt: Date;
 };
 
@@ -28,19 +32,21 @@ type ErrorItem = {
   message: string;
 };
 
-const isValidStudentId = (id: string) =>
-  /^\d{9}-\d$/.test(id);
+const isValidStudentId = (id: string) => /^\d{9}-\d$/.test(id);
 
 const isValidName = (name: string) =>
-  /^(นาย|นาง|นางสาว)\s?.+/.test(name);
+  /^(นาย|นาง|นางสาว)/.test(name);
 
 const isValidEmail = (email: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+const getAcademicYear = () =>
+  new Date().getFullYear() + 543;
+
 export async function POST(req: Request) {
   try {
     const body: UploadPayload = await req.json();
-    const { classId, section, students } = body;
+    const { classId, section, major, students } = body;
 
     if (!classId || !ObjectId.isValid(classId)) {
       return NextResponse.json(
@@ -56,6 +62,13 @@ export async function POST(req: Request) {
       );
     }
 
+    if (!major) {
+      return NextResponse.json(
+        { success: false, message: "กรุณาระบุสาขา" },
+        { status: 400 }
+      );
+    }
+
     if (!students || students.length === 0) {
       return NextResponse.json(
         { success: false, message: "ไม่พบข้อมูลนักศึกษา" },
@@ -67,11 +80,12 @@ export async function POST(req: Request) {
     const db = client.db("attendance");
 
     const studentsCol = db.collection<StudentDoc>("students");
-    const classes = db.collection("classes");
+    const classesCol = db.collection("classes");
+    const majorsCol = db.collection("majors");
 
     const classObjectId = new ObjectId(classId);
 
-    const classData = await classes.findOne({ _id: classObjectId });
+    const classData = await classesCol.findOne({ _id: classObjectId });
 
     if (!classData) {
       return NextResponse.json(
@@ -79,6 +93,24 @@ export async function POST(req: Request) {
         { status: 404 }
       );
     }
+
+    const className =
+      classData.name ||
+      classData.className ||
+      classData.class_name ||
+      classData.courseName ||
+      "";
+
+    const majorExists = await majorsCol.findOne({ name: major });
+
+    if (!majorExists) {
+      return NextResponse.json(
+        { success: false, message: "ไม่พบสาขานี้" },
+        { status: 404 }
+      );
+    }
+
+    const academicYear = getAcademicYear();
 
     const errors: ErrorItem[] = [];
     const validStudents: StudentDoc[] = [];
@@ -101,10 +133,7 @@ export async function POST(req: Request) {
         continue;
       }
 
-      const normalizedName = fullNameRaw.replace(
-        /^(นาย|นาง|นางสาว)(\S)/,
-        "$1 $2"
-      );
+      const normalizedName = fullNameRaw.replace(/\s+/g, " ").trim();
 
       if (!isValidName(normalizedName)) {
         errors.push({
@@ -124,10 +153,13 @@ export async function POST(req: Request) {
 
       validStudents.push({
         studentId,
-        fullName: normalizedName.replace(/\s+/g, " "),
+        fullName: normalizedName,
         email: email || undefined,
         classId: classObjectId,
+        className,
         section,
+        major,
+        academicYear,
         createdAt: new Date(),
       });
     }
@@ -140,50 +172,26 @@ export async function POST(req: Request) {
     }
 
     const studentIds = validStudents.map((s) => s.studentId);
-    const emails = validStudents
-      .map((s) => s.email)
-      .filter((e): e is string => !!e);
 
     const existing = await studentsCol
       .find({
         classId: classObjectId,
-        $or: [
-          { studentId: { $in: studentIds } },
-          ...(emails.length ? [{ email: { $in: emails } }] : []),
-        ],
+        section,
+        major,
+        academicYear,
+        studentId: { $in: studentIds },
       })
       .toArray();
 
-    const existingStudentIds = new Set(
-      existing.map((e) => e.studentId)
+    const existingIds = new Set(existing.map((e) => e.studentId));
+
+    const finalInsert = validStudents.filter(
+      (s) => !existingIds.has(s.studentId)
     );
-    const existingEmails = new Set(
-      existing.map((e) => e.email).filter(Boolean)
-    );
-
-    const finalInsert: StudentDoc[] = [];
-    let skipped = 0;
-
-    for (const s of validStudents) {
-      if (
-        existingStudentIds.has(s.studentId) ||
-        (s.email && existingEmails.has(s.email))
-      ) {
-        skipped++;
-        continue;
-      }
-
-      finalInsert.push(s);
-    }
 
     if (finalInsert.length === 0) {
       return NextResponse.json(
-        {
-          success: false,
-          message: "ข้อมูลซ้ำทั้งหมด",
-          skipped,
-          errors,
-        },
+        { success: false, message: "ข้อมูลซ้ำทั้งหมด", errors },
         { status: 400 }
       );
     }
@@ -194,14 +202,17 @@ export async function POST(req: Request) {
       {
         success: true,
         message: `เพิ่มสำเร็จ ${result.insertedCount} รายการ`,
-        skipped,
+        insertedCount: result.insertedCount,
+        preview: finalInsert.slice(0, 5),
+        skipped: validStudents.length - finalInsert.length,
         errors,
+        className,
+        major,
+        academicYear,
       },
       { status: 201 }
     );
   } catch (error: unknown) {
-    console.error("UPLOAD STUDENTS ERROR:", error);
-
     return NextResponse.json(
       {
         success: false,
