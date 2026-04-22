@@ -57,7 +57,7 @@ export default function ClassFilter({ data, onChange }: Props) {
 
         <input
           type="text"
-          placeholder="ค้นหารายวิชา และ รหัสวิชา"
+          placeholder="ค้นหาได้จากรายวิชา และรหัสวิชา"
           value={keyword}
           onChange={(e) => {
             setKeyword(e.target.value);
@@ -71,7 +71,7 @@ export default function ClassFilter({ data, onChange }: Props) {
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className="w-full px-3 py-2.5 text-[14px] border border-gray-200 rounded-md bg-white flex items-center justify-between hover:bg-gray-50 text-xs"
+          className="w-full px-3 py-2.5 text-[14px] border border-gray-200 rounded-md bg-white flex items-center justify-between hover:bg-gray-50 text-xs cursor-pointer"
         >
           <span className={branch ? "text-gray-800" : "text-gray-400"}>
             {branch || "เลือกสาขา"}

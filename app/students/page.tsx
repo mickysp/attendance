@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from "react";
 import Sidebar from "@/components/layouts/Sidebar";
-import { useRouter } from "next/navigation";
 import {
   DocumentArrowUpIcon,
   ChevronDownIcon,
@@ -10,11 +9,17 @@ import {
 } from "@heroicons/react/24/outline";
 import { useAlert } from "@/context/AlertContext";
 import StudentFilter from "@/components/students/Select";
+import { useRouter } from "next/navigation";
+import StudentTable from "@/components/students/Table";
 
 type StudentInput = {
   studentId: string;
   fullName: string;
   email?: string;
+  className?: string;
+  major?: string;
+  section?: string;
+  academicYear?: number;
 };
 
 type ClassDoc = {
@@ -29,18 +34,21 @@ type MajorDoc = {
   name: string;
 };
 
+type ClassItem = {
+  _id: string;
+  name: string;
+};
+
 export default function StudentsPage() {
-  const router = useRouter();
-
   const { showAlert } = useAlert();
-
+  const router = useRouter();
   const [loading, setLoading] = useState<boolean>(false);
-  const [data, setData] = useState<StudentInput[]>([]);
 
+  const [data, setData] = useState<StudentInput[]>([]);
   const [openImport, setOpenImport] = useState(false);
 
   const [file, setFile] = useState<File | null>(null);
-  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedClass, setSelectedClass] = useState<ClassItem | null>(null);
   const [selectedMajor, setSelectedMajor] = useState("");
   const [section, setSection] = useState("");
 
@@ -52,18 +60,23 @@ export default function StudentsPage() {
   const majorRef = useRef<HTMLDivElement>(null);
   const sectionRef = useRef<HTMLDivElement>(null);
 
-  const [classes, setClasses] = useState<string[]>([]);
+  const [classes, setClasses] = useState<ClassItem[]>([]);
   const [majors, setMajors] = useState<string[]>([]);
-
-  const [loadingClasses, setLoadingClasses] = useState(true);
-  const [loadingMajors, setLoadingMajors] = useState(true);
-
   const [importLoading, setImportLoading] = useState(false);
+
+  const [hasInitialData, setHasInitialData] = useState(false);
+
+  const [years, setYears] = useState<number[]>([]);
+  const [selectedYear, setSelectedYear] = useState<number | null>(null);
+
+  const [openYear, setOpenYear] = useState(false);
+  const yearRef = useRef<HTMLDivElement>(null);
 
   const getClassName = (c: ClassDoc): string =>
     c.name || c.class_name || c.className || "";
 
-  const isFormValid = !!file && !!selectedClass && !!selectedMajor && !!section;
+  const isFormValid =
+    !!file && !!selectedClass?._id && !!selectedMajor && !!section;
 
   const [filters, setFilters] = useState({
     keyword: "",
@@ -72,32 +85,44 @@ export default function StudentsPage() {
     section: "",
   });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
+  const filteredData = data.filter((s) => {
+    const keyword = filters.keyword.toLowerCase();
 
-        setTimeout(() => {
-          setData([]);
-          setLoading(false);
-        }, 300);
-      } catch (err) {
-        console.error(err);
-        setLoading(false);
-      }
-    };
+    const matchKeyword =
+      (s.fullName || "").toLowerCase().includes(keyword) ||
+      (s.studentId || "").toLowerCase().includes(keyword);
 
-    fetchData();
-  }, []);
+    const matchClass = filters.className
+      ? (s.className || "").includes(filters.className)
+      : true;
+
+    const matchBranch = filters.branch
+      ? (s.major || "").includes(filters.branch)
+      : true;
+
+    const matchSection = filters.section ? s.section === filters.section : true;
+
+    const matchYear = selectedYear ? s.academicYear === selectedYear : true;
+
+    return (
+      matchKeyword && matchClass && matchBranch && matchSection && matchYear
+    );
+  });
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      if (yearRef.current && !yearRef.current.contains(e.target as Node)) {
+        setOpenYear(false);
+      }
+
       if (classRef.current && !classRef.current.contains(e.target as Node)) {
         setOpenClass(false);
       }
+
       if (majorRef.current && !majorRef.current.contains(e.target as Node)) {
         setOpenMajor(false);
       }
+
       if (
         sectionRef.current &&
         !sectionRef.current.contains(e.target as Node)
@@ -117,12 +142,16 @@ export default function StudentsPage() {
         const data: { success: boolean; data: ClassDoc[] } = await res.json();
 
         if (data.success) {
-          setClasses(data.data.map(getClassName));
+          setClasses(
+            data.data.map((c) => ({
+              _id: c._id,
+              name: getClassName(c),
+            })),
+          );
         }
       } catch (err) {
         console.error(err);
       } finally {
-        setLoadingClasses(false);
       }
     };
 
@@ -137,12 +166,38 @@ export default function StudentsPage() {
       } catch (err) {
         console.error(err);
       } finally {
-        setLoadingMajors(false);
       }
     };
 
     fetchClasses();
     fetchMajors();
+  }, []);
+
+  const fetchStudents = async () => {
+    try {
+      setLoading(true);
+
+      const res = await fetch("/api/students");
+      const result = await res.json();
+
+      if (!result.success) return;
+
+      const students = result.students || [];
+
+      setData(students);
+      setYears(result.years || []);
+      setSelectedYear(result.currentYear);
+
+      setHasInitialData(students.length > 0);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStudents();
   }, []);
 
   return (
@@ -160,8 +215,8 @@ export default function StudentsPage() {
         )}
 
         {!loading && (
-          <div className="flex flex-col h-[85vh] bg-white rounded-2xl shadow-sm">
-            <div className="px-6 pt-6 flex items-center justify-between">
+          <div className="flex flex-col h-[90vh] bg-white rounded-2xl shadow-sm">
+            <div className="px-6 pt-6 flex items-start justify-between">
               <div>
                 <h1 className="text-2xl font-semibold text-gray-800">
                   Student
@@ -171,17 +226,71 @@ export default function StudentsPage() {
                 </p>
               </div>
 
-              {data.length > 0 && (
-                <div className="flex gap-2">
+              {hasInitialData && (
+                <div className="flex items-center gap-3 mt-[2px]">
+                  <div
+                    ref={yearRef}
+                    className="relative flex items-center gap-2"
+                  >
+                    <span className="text-sm text-gray-500 whitespace-nowrap">
+                      ปีการศึกษา:
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={() => setOpenYear(!openYear)}
+                      className="h-[40px] px-3 border border-gray-200 rounded-md bg-white flex items-center justify-between text-sm hover:bg-gray-50 w-[100px] cursor-pointer"
+                    >
+                      <span
+                        className={
+                          selectedYear ? "text-gray-800" : "text-gray-400"
+                        }
+                      >
+                        {selectedYear || "เลือกปี"}
+                      </span>
+
+                      <ChevronDownIcon className="w-4 h-4 text-gray-400 ml-2" />
+                    </button>
+
+                    {openYear && (
+                      <div className="absolute right-0 top-[40px] z-20 bg-white border border-gray-200 rounded-md shadow max-h-48 overflow-y-auto w-[100px] cursor-pointer">
+                        {years.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-gray-400">
+                            ไม่มีข้อมูลปี
+                          </div>
+                        ) : (
+                          years.map((y) => (
+                            <button
+                              key={y}
+                              onClick={() => {
+                                setSelectedYear(y);
+                                setOpenYear(false);
+                              }}
+                              className={`block w-full px-3 py-2 text-left text-sm
+                              ${
+                                selectedYear === y
+                                  ? "bg-blue-50 text-blue-600 font-medium"
+                                  : "hover:bg-gray-100"
+                              }`}
+                            >
+                              {y}
+                            </button>
+                          ))
+                        )}
+                      </div>
+                    )}
+                  </div>
+
                   <button
-                    onClick={() => router.push("/students/import")}
-                    className="px-4 py-2 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => setOpenImport(true)}
+                    className="h-[40px] px-4 rounded-md border border-gray-300 text-base text-gray-700 hover:bg-gray-100 cursor-pointer"
                   >
                     Import
                   </button>
+
                   <button
                     onClick={() => router.push("/students/create")}
-                    className="px-5 py-2.5 rounded-md text-sm bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] cursor-pointer"
+                    className="h-[40px] px-5 rounded-md text-base bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] cursor-pointer"
                   >
                     + เพิ่มนักศึกษา
                   </button>
@@ -189,26 +298,32 @@ export default function StudentsPage() {
               )}
             </div>
 
-            <div className="flex flex-1 flex-col items-center justify-center text-center px-6">
-              {data.length > 0 && (
-                <div className="mb-4">
+            <div className="flex flex-1 flex-col px-6 pt-6">
+              {hasInitialData && (
+                <div className="mb-4 w-full">
                   <StudentFilter
-                    data={[]}
+                    data={classes.map((c) => ({
+                      _id: c._id,
+                      className: c.name,
+                      branches: majors.map((m) => ({
+                        _id: m,
+                        name: m,
+                      })),
+                    }))}
                     onChange={(value) => {
                       setFilters(value);
-                      console.log("FILTER:", value);
                     }}
                   />
                 </div>
               )}
 
-              {data.length === 0 ? (
+              {!hasInitialData && (
                 <div className="flex flex-1 flex-col items-center justify-center text-center">
                   <div className="mb-4 flex items-center justify-center w-24 h-24 rounded-full bg-gray-100">
                     <DocumentTextIcon className="w-12 h-12 text-gray-400" />
                   </div>
 
-                  <p className="text-sm text-gray-400 mb-6">
+                  <p className="text-sm text-gray-400 mb-4">
                     ยังไม่มีข้อมูลนักศึกษา
                   </p>
 
@@ -220,12 +335,30 @@ export default function StudentsPage() {
                     Import
                   </button>
                 </div>
-              ) : (
-                <div className="w-full">
-                  <p className="text-gray-500 text-sm">
-                    มีข้อมูลนักศึกษาแล้ว (ใส่ table ตรงนี้)
+              )}
+
+              {hasInitialData && data.length === 0 && (
+                <div className="flex flex-1 flex-col items-center justify-center text-center">
+                  <div className="mb-4 flex items-center justify-center w-20 h-20 rounded-full bg-gray-100">
+                    <DocumentTextIcon className="w-10 h-10 text-gray-400" />
+                  </div>
+
+                  <p className="text-sm text-gray-400">
+                    ยังไม่มีข้อมูลรายนักศึกษาล่าสุด
                   </p>
                 </div>
+              )}
+
+              {hasInitialData && data.length > 0 && (
+                <>
+                  <div className="text-base text-gray-600 font-semibold mt-2">
+                    Student ทั้งหมด {filteredData.length} รายการ
+                  </div>
+
+                  <div className="w-full">
+                    <StudentTable data={filteredData} />
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -254,27 +387,23 @@ export default function StudentsPage() {
                   onClick={() => setOpenClass(!openClass)}
                   className="form-input-card text-sm flex items-center justify-between w-full"
                 >
-                  {selectedClass || "เลือกวิชา"}
+                  {selectedClass?.name || "เลือกวิชา"}
                   <ChevronDownIcon className="w-4 h-4 text-gray-400" />
                 </button>
 
                 {openClass && (
                   <div className="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg border border-gray-200 max-h-48 overflow-y-auto">
-                    {loadingClasses ? (
-                      <div className="px-4 py-2 text-sm text-gray-400">
-                        กำลังโหลดวิชา...
-                      </div>
-                    ) : classes.length === 0 ? (
+                    {classes.length === 0 ? (
                       <div className="px-4 py-2 text-sm text-gray-400">
                         ไม่พบข้อมูลวิชา
                       </div>
                     ) : (
                       classes.map((c) => {
-                        const isSelected = selectedClass === c;
+                        const isSelected = selectedClass?._id === c._id;
 
                         return (
                           <button
-                            key={c}
+                            key={c._id}
                             onClick={() => {
                               setSelectedClass(c);
                               setOpenClass(false);
@@ -286,7 +415,7 @@ export default function StudentsPage() {
                                 : "hover:bg-gray-100"
                             }`}
                           >
-                            {c}
+                            {c.name}
                           </button>
                         );
                       })
@@ -309,11 +438,7 @@ export default function StudentsPage() {
 
                 {openMajor && (
                   <div className="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg border border-gray-200 max-h-48 overflow-y-auto">
-                    {loadingMajors ? (
-                      <div className="px-4 py-2 text-sm text-gray-400">
-                        กำลังโหลดสาขา...
-                      </div>
-                    ) : majors.length === 0 ? (
+                    {majors.length === 0 ? (
                       <div className="px-4 py-2 text-sm text-gray-400">
                         ไม่พบข้อมูลสาขา
                       </div>
@@ -425,7 +550,7 @@ export default function StudentsPage() {
 
                     const formData = new FormData();
                     formData.append("file", file as File);
-                    formData.append("class", selectedClass);
+                    formData.append("classId", selectedClass?._id || "");
                     formData.append("major", selectedMajor);
                     formData.append("section", section);
 
@@ -444,10 +569,6 @@ export default function StudentsPage() {
                     showAlert(result.message, "success");
 
                     setOpenImport(false);
-
-                    setTimeout(() => {
-                      window.location.reload();
-                    }, 500);
                   } catch (error) {
                     showAlert("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้", "error");
                   } finally {

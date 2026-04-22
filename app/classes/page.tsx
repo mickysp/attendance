@@ -116,7 +116,7 @@ export default function ClassesPage() {
         )}
 
         {!loading && hasData && (
-          <div className="flex flex-col h-[85vh] bg-white rounded-2xl shadow-sm">
+          <div className="flex flex-col h-[90vh] bg-white rounded-2xl shadow-sm">
             <div className="px-6 pt-6 flex items-center justify-between">
               <div>
                 <h1 className="text-2xl font-semibold text-gray-800">
@@ -129,15 +129,19 @@ export default function ClassesPage() {
 
               <button
                 onClick={() => router.push("/classes/create")}
-                className="px-6 py-2 rounded-md bg-[var(--primary)] text-white text-base hover:bg-[var(--primary-hover)] cursor-pointer"
+                className="h-[40px] px-6 py-2 rounded-md bg-[var(--primary)] text-white text-base hover:bg-[var(--primary-hover)] cursor-pointer"
               >
                 + เพิ่มวิชา
               </button>
             </div>
 
             <div className="p-6">
-              <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center justify-between">
                 <Select data={classes} onChange={setFilter} />
+              </div>
+
+              <div className="text-base text-gray-600 font-semibold mt-6">
+                Classes ทั้งหมด {filteredClasses.length} รายการ
               </div>
 
               <Table

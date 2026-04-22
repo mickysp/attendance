@@ -1,35 +1,32 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { ObjectId, Filter } from "mongodb";
+import { Filter, ObjectId } from "mongodb";
 
 type StudentDoc = {
+  _id: ObjectId;
   studentId: string;
   fullName: string;
   email?: string;
-  classId?: ObjectId;
-  className?: string;
   section: string;
   major?: string;
   academicYear?: number;
   createdAt: Date;
 };
 
-type ClassDoc = {
-  _id: ObjectId;
-  name?: string;
-  className?: string;
-  class_name?: string;
+type StudentClassDoc = {
+  studentId: ObjectId;
+  className: string;
 };
 
-const getClassName = (c: ClassDoc): string =>
-  c.name || c.className || c.class_name || "";
+const getCurrentAcademicYear = (): number =>
+  new Date().getFullYear() + 543;
 
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
 
     const keyword = searchParams.get("keyword") || "";
-    const classNameFilter = searchParams.get("class") || "";
+    const classFilter = searchParams.get("class") || "";
     const majorFilter = searchParams.get("major") || "";
     const sectionFilter = searchParams.get("section") || "";
     const yearFilter = searchParams.get("year") || "";
@@ -38,9 +35,8 @@ export async function GET(req: Request) {
     const db = client.db("attendance");
 
     const studentsCol = db.collection<StudentDoc>("students");
-    const classesCol = db.collection<ClassDoc>("classes");
-
-    const allClasses = await classesCol.find().toArray();
+    const studentClassesCol =
+      db.collection<StudentClassDoc>("student_classes");
 
     const query: Filter<StudentDoc> = {};
 
@@ -56,57 +52,140 @@ export async function GET(req: Request) {
     }
 
     if (majorFilter) {
-      query.major = majorFilter;
+      query.major = { $regex: majorFilter, $options: "i" };
     }
 
-    if (yearFilter) {
-      query.academicYear = Number(yearFilter);
-    }
+    const academicYear = yearFilter
+      ? Number(yearFilter)
+      : getCurrentAcademicYear();
 
-    const raw = await studentsCol
+    query.academicYear = academicYear;
+
+    const students = await studentsCol
       .find(query)
       .sort({ createdAt: -1 })
       .toArray();
 
-    const data = raw.map((s) => {
-      let className = s.className || "";
+    const studentIds = students.map((s) => s._id);
 
-      if (!className && s.classId) {
-        const found = allClasses.find(
-          (c) => c._id.toString() === s.classId?.toString()
-        );
-        className = found ? getClassName(found) : "";
+    const relations = await studentClassesCol
+      .find({
+        studentId: { $in: studentIds },
+      })
+      .toArray();
+
+    const classMap = new Map<string, string[]>();
+
+    relations.forEach((r) => {
+      const key = r.studentId.toString();
+
+      if (!classMap.has(key)) {
+        classMap.set(key, []);
       }
 
-      return {
-        studentId: s.studentId,
-        fullName: s.fullName,
-        email: s.email,
-        className,
-        section: s.section,
-        major: s.major || "",
-        academicYear: s.academicYear || null,
-        createdAt: s.createdAt,
-      };
+      classMap.get(key)!.push(r.className);
     });
 
-    const filtered =
-      classNameFilter
-        ? data.filter((d) =>
-            d.className
-              .toLowerCase()
-              .includes(classNameFilter.toLowerCase())
-          )
-        : data;
+    let data = students.map((s) => ({
+      studentId: s.studentId,
+      fullName: s.fullName,
+      email: s.email,
+      classNames: classMap.get(s._id.toString()) || [],
+      section: s.section,
+      major: s.major || "",
+      academicYear: s.academicYear || null,
+      createdAt: s.createdAt,
+    }));
+
+    if (classFilter) {
+      data = data.filter((d) =>
+        d.classNames.some((c) =>
+          c.toLowerCase().includes(classFilter.toLowerCase())
+        )
+      );
+    }
+
+    const yearsRaw = await studentsCol.distinct("academicYear");
+
+    const years = (yearsRaw as number[])
+      .filter(Boolean)
+      .sort((a, b) => b - a);
 
     return NextResponse.json(
       {
         success: true,
-        count: filtered.length,
-        data: filtered,
+        count: data.length,
+        students: data,
+        years,
+        currentYear: getCurrentAcademicYear(),
       },
       { status: 200 }
     );
+
+  } catch (error: unknown) {
+    return NextResponse.json(
+      {
+        success: false,
+        message:
+          error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+
+    const id = searchParams.get("id");
+
+    if (!id || !ObjectId.isValid(id)) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "id ไม่ถูกต้อง",
+        },
+        { status: 400 }
+      );
+    }
+
+    const client = await clientPromise;
+    const db = client.db("attendance");
+
+    const studentsCol = db.collection<StudentDoc>("students");
+    const studentClassesCol =
+      db.collection<StudentClassDoc>("student_classes");
+
+    const objectId = new ObjectId(id);
+
+    const student = await studentsCol.findOne({ _id: objectId });
+
+    if (!student) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "ไม่พบข้อมูลนักศึกษา",
+        },
+        { status: 404 }
+      );
+    }
+
+    await studentsCol.deleteOne({ _id: objectId });
+
+    await studentClassesCol.deleteMany({
+      studentId: objectId,
+    });
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "ลบข้อมูลเรียบร้อย",
+        deletedStudentId: student.studentId,
+      },
+      { status: 200 }
+    );
+
   } catch (error: unknown) {
     return NextResponse.json(
       {
