@@ -71,19 +71,31 @@ export async function POST(req: Request) {
     const { classId, section, major, students } = body;
 
     if (!classId || !ObjectId.isValid(classId)) {
-      return NextResponse.json({ success: false, message: "classId ไม่ถูกต้อง" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: "classId ไม่ถูกต้อง" },
+        { status: 400 },
+      );
     }
 
     if (!section) {
-      return NextResponse.json({ success: false, message: "กรุณาเลือก Section" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: "กรุณาเลือก Section" },
+        { status: 400 },
+      );
     }
 
     if (!major) {
-      return NextResponse.json({ success: false, message: "กรุณาระบุสาขา" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: "กรุณาระบุสาขา" },
+        { status: 400 },
+      );
     }
 
     if (!students || students.length === 0) {
-      return NextResponse.json({ success: false, message: "ไม่มีข้อมูลนักศึกษา" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, message: "ไม่มีข้อมูลนักศึกษา" },
+        { status: 400 },
+      );
     }
 
     const client = await clientPromise;
@@ -99,7 +111,10 @@ export async function POST(req: Request) {
     const classData = await classesCol.findOne({ _id: classObjectId });
 
     if (!classData) {
-      return NextResponse.json({ success: false, message: "ไม่พบวิชา" }, { status: 404 });
+      return NextResponse.json(
+        { success: false, message: "ไม่พบวิชา" },
+        { status: 404 },
+      );
     }
 
     const className =
@@ -112,7 +127,10 @@ export async function POST(req: Request) {
     const majorExists = await majorsCol.findOne({ name: major });
 
     if (!majorExists) {
-      return NextResponse.json({ success: false, message: "ไม่พบสาขา" }, { status: 404 });
+      return NextResponse.json(
+        { success: false, message: "ไม่พบสาขา" },
+        { status: 404 },
+      );
     }
 
     const academicYear = getAcademicYear();
@@ -163,9 +181,9 @@ export async function POST(req: Request) {
         studentsCol.updateOne(
           { studentId: s.studentId, academicYear },
           { $setOnInsert: s },
-          { upsert: true }
-        )
-      )
+          { upsert: true },
+        ),
+      ),
     );
 
     const allStudents = await studentsCol
@@ -173,7 +191,7 @@ export async function POST(req: Request) {
       .toArray();
 
     const idMap = new Map<string, ObjectId>(
-      allStudents.map((s) => [s.studentId, s._id!])
+      allStudents.map((s) => [s.studentId, s._id!]),
     );
 
     const details: ResultItem[] = [];
@@ -217,6 +235,32 @@ export async function POST(req: Request) {
         status: "created",
         relation: "added",
       });
+
+      const duplicateName = await studentsCol.findOne({
+        fullName: s.fullName,
+        academicYear,
+      });
+
+      if (duplicateName) {
+        const hasSameClass = await studentClassesCol.findOne({
+          studentId: duplicateName._id,
+          className,
+        });
+
+        if (hasSameClass) {
+          details.push({
+            studentId: s.studentId,
+            fullName: s.fullName,
+            email: s.email,
+            section: s.section,
+            major: s.major,
+            className,
+            status: "duplicate",
+            relation: "exists",
+          });
+          continue;
+        }
+      }
     }
 
     return NextResponse.json({
@@ -229,7 +273,6 @@ export async function POST(req: Request) {
       details,
       errors,
     });
-
   } catch (error) {
     return NextResponse.json({
       success: false,

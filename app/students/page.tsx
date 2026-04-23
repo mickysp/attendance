@@ -7,12 +7,13 @@ import {
   ChevronDownIcon,
   DocumentTextIcon,
 } from "@heroicons/react/24/outline";
-import { useAlert } from "@/context/AlertContext";
 import StudentFilter from "@/components/students/Select";
 import { useRouter } from "next/navigation";
 import StudentTable from "@/components/students/Table";
+import { useAlert } from "@/context/AlertContext";
 
 type StudentInput = {
+  _id: string;
   studentId: string;
   fullName: string;
   email?: string;
@@ -102,11 +103,9 @@ export default function StudentsPage() {
 
     const matchSection = filters.section ? s.section === filters.section : true;
 
-    const matchYear = selectedYear ? s.academicYear === selectedYear : true;
+    const matchYear = true;
 
-    return (
-      matchKeyword && matchClass && matchBranch && matchSection && matchYear
-    );
+    return matchKeyword && matchClass && matchBranch && matchSection;
   });
 
   useEffect(() => {
@@ -150,7 +149,7 @@ export default function StudentsPage() {
           );
         }
       } catch (err) {
-        console.error(err);
+        //console.error(err);
       } finally {
       }
     };
@@ -164,7 +163,7 @@ export default function StudentsPage() {
           setMajors(data.data.map((m) => m.name));
         }
       } catch (err) {
-        console.error(err);
+        //console.error(err);
       } finally {
       }
     };
@@ -173,24 +172,32 @@ export default function StudentsPage() {
     fetchMajors();
   }, []);
 
-  const fetchStudents = async () => {
+  const fetchStudents = async (year?: number) => {
     try {
       setLoading(true);
 
-      const res = await fetch("/api/students");
+      const query = year ? `?year=${year}` : "";
+
+      const url = `/api/students${query}`;
+
+      const res = await fetch(url);
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error("API error");
+      }
+
       const result = await res.json();
 
       if (!result.success) return;
 
-      const students = result.students || [];
-
-      setData(students);
+      setData(result.students || []);
       setYears(result.years || []);
-      setSelectedYear(result.currentYear);
+      setSelectedYear(year ?? result.currentYear);
 
-      setHasInitialData(students.length > 0);
+      setHasInitialData(result.students.length > 0);
     } catch (err) {
-      console.error(err);
+      //console.error("FETCH ERROR:", err);
     } finally {
       setLoading(false);
     }
@@ -200,6 +207,9 @@ export default function StudentsPage() {
     fetchStudents();
   }, []);
 
+  const handleDeleteSuccess = (id: string) => {
+    setData((prev) => prev.filter((s) => s._id !== id));
+  };
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar />
@@ -265,6 +275,7 @@ export default function StudentsPage() {
                               onClick={() => {
                                 setSelectedYear(y);
                                 setOpenYear(false);
+                                fetchStudents(y);
                               }}
                               className={`block w-full px-3 py-2 text-left text-sm
                               ${
@@ -356,7 +367,10 @@ export default function StudentsPage() {
                   </div>
 
                   <div className="w-full">
-                    <StudentTable data={filteredData} />
+                    <StudentTable
+                      data={filteredData}
+                      onDeleteSuccess={handleDeleteSuccess}
+                    />
                   </div>
                 </>
               )}
@@ -523,6 +537,7 @@ export default function StudentsPage() {
                   <label htmlFor="upload" className="cursor-pointer">
                     <DocumentArrowUpIcon className="w-6 h-6 mx-auto text-gray-400 mb-2" />
                     <p className="text-sm text-gray-500">เลือกไฟล์ Excel</p>
+                    <p className="text-xs text-gray-400 mt-1">รองรับไฟล์ .xlsx และชื่อไฟล์ภาษาไทย เท่านั้น</p>
 
                     {file && (
                       <p className="text-xs text-blue-600 mt-1">{file.name}</p>
@@ -567,6 +582,8 @@ export default function StudentsPage() {
                     }
 
                     showAlert(result.message, "success");
+
+                    await fetchStudents(selectedYear || undefined);
 
                     setOpenImport(false);
                   } catch (error) {

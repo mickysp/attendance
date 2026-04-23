@@ -72,7 +72,7 @@ export default function ClassesPage() {
           setClasses(safeData);
         }
       } catch (error) {
-        console.error("Fetch classes error:", error);
+        //console.error("Fetch classes error:", error);
       } finally {
         setLoading(false);
       }

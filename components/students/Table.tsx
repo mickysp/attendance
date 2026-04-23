@@ -7,19 +7,30 @@ import {
   PencilSquareIcon,
   TrashIcon,
 } from "@heroicons/react/24/outline";
+import { useConfirm } from "@/context/ConfirmContext";
+import { useAlert } from "@/context/AlertContext";
 
 type Student = {
+  _id: string;
   studentId: string;
   fullName: string;
   email?: string;
-  academicYear?: number;
 };
 
-export default function StudentTable({ data }: { data: Student[] }) {
+export default function StudentTable({
+  data,
+  onDeleteSuccess,
+}: {
+  data: Student[];
+  onDeleteSuccess: (id: string) => void;
+}) {
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [page, setPage] = useState(1);
   const [openPageSize, setOpenPageSize] = useState(false);
   const pageSizeRef = useRef<HTMLDivElement>(null);
+
+  const { showConfirm } = useConfirm();
+  const { showAlert } = useAlert();
 
   const totalPages = Math.ceil(data.length / itemsPerPage);
 
@@ -61,6 +72,33 @@ export default function StudentTable({ data }: { data: Student[] }) {
     }
 
     return pages;
+  };
+
+  const handleDelete = (id: string) => {
+    showConfirm(
+      "คุณต้องการลบข้อมูลใช่หรือไม่?",
+      async () => {
+        try {
+          const res = await fetch(`/api/students/delete?id=${id}`, {
+            method: "DELETE",
+          });
+
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text);
+          }
+
+          const data = await res.json();
+
+          showAlert(data.message || "ลบข้อมูลสำเร็จ", "success");
+
+          onDeleteSuccess(id);
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
+          showAlert(message, "error");
+        }
+      },
+    );
   };
 
   if (data.length === 0) {
@@ -115,7 +153,10 @@ export default function StudentTable({ data }: { data: Student[] }) {
                         แก้ไข
                       </button>
 
-                      <button className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-red-200 text-red-500 hover:bg-red-50 text-sm cursor-pointer">
+                      <button
+                        onClick={() => handleDelete(s._id)}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-red-200 text-red-500 hover:bg-red-50 text-sm cursor-pointer"
+                      >
                         <TrashIcon className="w-4 h-4" />
                         ลบ
                       </button>
@@ -144,7 +185,7 @@ export default function StudentTable({ data }: { data: Student[] }) {
 
               {openPageSize && (
                 <div className="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg border border-gray-200">
-                  {[5, 10, 15, 20].map((size) => (
+                  {[5, 10, 15].map((size) => (
                     <button
                       key={size}
                       onClick={() => {

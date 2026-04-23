@@ -189,6 +189,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({
       success: true,
+      message: "นำเข้าข้อมูลสำเร็จ",
       summary: {
         total: parsed.length,
         added: details.filter((d) => d.relation === "added").length,

@@ -251,7 +251,7 @@ export default function Table({
 
               {openPageSize && (
                 <div className="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg border border-gray-200">
-                  {[5, 10, 15, 20].map((size) => (
+                  {[5, 10, 15].map((size) => (
                     <button
                       key={size}
                       onClick={() => {
