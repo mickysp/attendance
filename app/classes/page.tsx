@@ -72,7 +72,7 @@ export default function ClassesPage() {
           setClasses(safeData);
         }
       } catch (error) {
-        console.error("Fetch classes error:", error);
+        //console.error("Fetch classes error:", error);
       } finally {
         setLoading(false);
       }
@@ -102,7 +102,7 @@ export default function ClassesPage() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-blue-50">
       <Sidebar />
 
       <div className="flex-1 overflow-y-auto p-6 font-noto relative">
@@ -116,10 +116,10 @@ export default function ClassesPage() {
         )}
 
         {!loading && hasData && (
-          <div className="flex flex-col h-[85vh] bg-white rounded-2xl shadow-sm">
+          <div className="flex flex-col h-[90vh] bg-white rounded-2xl">
             <div className="px-6 pt-6 flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-semibold text-gray-800">
+                <h1 className="text-[26px] font-semibold text-gray-800">
                   Classes
                 </h1>
                 <p className="text-sm text-gray-400 mt-1">
@@ -129,15 +129,19 @@ export default function ClassesPage() {
 
               <button
                 onClick={() => router.push("/classes/create")}
-                className="px-6 py-2 rounded-md bg-[var(--primary)] text-white text-base hover:bg-[var(--primary-hover)] cursor-pointer"
+                className="h-[40px] px-6 py-2 rounded-md bg-[var(--primary)] text-white text-base hover:bg-[var(--primary-hover)] cursor-pointer"
               >
                 + เพิ่มวิชา
               </button>
             </div>
 
             <div className="p-6">
-              <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center justify-between">
                 <Select data={classes} onChange={setFilter} />
+              </div>
+
+              <div className="text-base text-gray-600 font-semibold mt-6">
+                Classes ทั้งหมด {filteredClasses.length} รายการ
               </div>
 
               <Table
@@ -149,17 +153,17 @@ export default function ClassesPage() {
         )}
 
         {!loading && !hasData && (
-          <div className="flex flex-col h-[85vh] bg-white rounded-2xl shadow-sm">
+          <div className="flex flex-col h-[90vh] bg-white rounded-2xl shadow-sm">
             <div className="px-6 py-4">
-              <h1 className="text-2xl font-semibold text-gray-800">Classes</h1>
+              <h1 className="text-[26px] font-semibold text-gray-800">Classes</h1>
             </div>
 
             <div className="flex flex-1 flex-col items-center justify-center text-center">
-              <div className="mb-3 flex items-center justify-center w-24 h-24 rounded-full bg-gray-100">
-                <DocumentTextIcon className="w-12 h-12 text-gray-400" />
+              <div className="mb-3 flex items-center justify-center w-28 h-28 rounded-full bg-gray-100">
+                <img src="/not-exist.png" className="w-28 h-28" />
               </div>
 
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-400 mb-4">
                 ยังไม่มีข้อมูลรายวิชาล่าสุด
               </p>
 

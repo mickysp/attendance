@@ -23,7 +23,7 @@ const notoSansThai = Noto_Sans_Thai({
 });
 
 export const metadata: Metadata = {
-  title: "Attendance Lab",
+  title: "Attendy",
 };
 
 export default function RootLayout({

@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import {
   ChevronDownIcon,
   MagnifyingGlassIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 
 type Branch = {
@@ -52,32 +53,44 @@ export default function ClassFilter({ data, onChange }: Props) {
 
   return (
     <div className="flex flex-col md:flex-row gap-3 w-full">
-      <div className="relative w-full md:w-[390px]">
+      <div className="relative w-full md:w-[380px]">
         <MagnifyingGlassIcon className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
 
         <input
           type="text"
-          placeholder="ค้นหารายวิชา และ รหัสวิชา"
+          placeholder="ค้นหาได้จากรายวิชา และรหัสวิชา"
           value={keyword}
           onChange={(e) => {
             setKeyword(e.target.value);
             handleChange(e.target.value, branch);
           }}
-          className="w-full pl-9 pr-3 py-2.5 text-[14px] border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--primary)] text-xs"
+          className="w-full pl-9 pr-9 py-2.5 text-[14px] border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-200 text-xs"
         />
+
+        {keyword && (
+          <button
+            onClick={() => {
+              setKeyword("");
+              handleChange("", branch);
+            }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+          >
+            <XMarkIcon className="w-5 h-5 text-blue-500" />
+          </button>
+        )}
       </div>
 
       <div ref={ref} className="relative w-full md:w-[280px]">
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className="w-full px-3 py-2.5 text-[14px] border border-gray-200 rounded-md bg-white flex items-center justify-between hover:bg-gray-50 text-xs"
+          className="w-full px-3 py-2.5 text-[14px] border border-gray-200 rounded-md bg-white flex items-center justify-between hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-gray-200 text-xs cursor-pointer"
         >
           <span className={branch ? "text-gray-800" : "text-gray-400"}>
             {branch || "เลือกสาขา"}
           </span>
 
-          <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+          <ChevronDownIcon className="w-4 h-4 text-blue-500" />
         </button>
 
         {open && (

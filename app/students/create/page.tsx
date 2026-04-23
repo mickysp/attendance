@@ -179,6 +179,11 @@ export default function CreateStudentPage() {
     }
   };
 
+  const total = students.length;
+  const valid = students.filter(
+    (s) => s.studentId && s.fullName && s.section,
+  ).length;
+
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50">
       <Sidebar />
@@ -194,17 +199,28 @@ export default function CreateStudentPage() {
         )}
 
         <div className="bg-white rounded-2xl shadow-sm p-6" ref={dropdownRef}>
-          <div className="flex items-center gap-3 mb-4">
-            <button
-              onClick={() => router.push("/students")}
-              className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 hover:bg-gray-100 transition cursor-pointer"
-            >
-              <ArrowLeftIcon className="w-3 h-3 text-gray-700" />
-            </button>
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.push("/students")}
+                className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 hover:bg-gray-100 transition cursor-pointer"
+              >
+                <ArrowLeftIcon className="w-3 h-3 text-gray-700" />
+              </button>
 
-            <h1 className="text-2xl font-semibold text-gray-800">
-              เพิ่มนักศึกษา
-            </h1>
+              <h1 className="text-2xl font-semibold text-gray-800">
+                เพิ่มนักศึกษา
+              </h1>
+            </div>
+
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-100">
+              <span className="text-sm text-gray-500">
+                จำนวนนักศึกษาที่เพิ่ม
+              </span>
+              <span className="text-sm font-semibold text-blue-600">
+                {students.filter((s) => s.studentId || s.fullName).length}
+              </span>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">

@@ -4,11 +4,11 @@ import {
   HomeIcon,
   CalendarDaysIcon,
   UserGroupIcon,
-  ChartBarIcon,
-  Cog6ToothIcon,
+  IdentificationIcon,
   BookOpenIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
+  ClipboardDocumentCheckIcon
 } from "@heroicons/react/24/outline";
 import { ReactNode, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -61,21 +61,19 @@ export default function Sidebar() {
     <aside
       className={`${
         collapsed ? "w-[70px]" : "w-[280px]"
-      } h-screen overflow-y-auto bg-white border-r border-gray-200 p-4 flex flex-col justify-between transition-all duration-300 font-noto`}
+      } h-screen overflow-y-auto bg-white border-gray-200 p-4 flex flex-col justify-between transition-all duration-300 font-noto`}
     >
       <div>
         <div className="mb-6 flex items-center justify-between pb-4 border-b border-gray-200">
           {!collapsed && (
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-blue-500 flex items-center justify-center">
+              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-blue-600 flex items-center justify-center shadow-sm">
                 <CalendarDaysIcon className="h-5 w-5 text-white" />
               </div>
 
               <div>
                 <h1 className="text-lg font-semibold">Attendy</h1>
-                <p className="text-xs text-gray-500">
-                  Management System
-                </p>
+                <p className="text-xs text-gray-500">Management System</p>
               </div>
             </div>
           )}
@@ -88,23 +86,13 @@ export default function Sidebar() {
           </button>
         </div>
 
-        <nav className="flex flex-col gap-2 text-sm">
-          {user.role === "Admin" && (
-            <SidebarItem
-              icon={<HomeIcon />}
-              label="Dashboard"
-              collapsed={collapsed}
-              active={pathname === "/dashboard"}
-              onClick={() => router.push("/dashboard")}
-            />
-          )}
-
+        <nav className="flex flex-col gap-4 text-sm font-medium">
           <SidebarItem
-            icon={<CalendarDaysIcon />}
-            label="Attendance"
+            icon={<HomeIcon />}
+            label="Dashboard"
             collapsed={collapsed}
-            active={pathname === "/attendance"}
-            onClick={() => router.push("/attendance")}
+            active={pathname === "/dashboard"}
+            onClick={() => router.push("/dashboard")}
           />
 
           <SidebarItem
@@ -121,6 +109,22 @@ export default function Sidebar() {
             collapsed={collapsed}
             active={pathname.startsWith("/students")}
             onClick={() => router.push("/students")}
+          />
+
+          <SidebarItem
+            icon={<IdentificationIcon />}
+            label="Attendance"
+            collapsed={collapsed}
+            active={pathname === "/attendance"}
+            onClick={() => router.push("/attendance")}
+          />
+
+          <SidebarItem
+            icon={<ClipboardDocumentCheckIcon />}
+            label="ตัวอย่างแบบฟอร์มเช็คชื่อ"
+            collapsed={collapsed}
+            active={pathname.startsWith("/checkinform")}
+            onClick={() => router.push("/checkinform")}
           />
         </nav>
       </div>
@@ -155,7 +159,7 @@ export default function Sidebar() {
           {!collapsed && (
             <button
               onClick={handleLogout}
-              className="p-2 rounded-md hover:bg-blue-100 hover:text-blue-600 transition cursor-pointer"
+              className="p-2 rounded-md hover:bg-red-100 hover:text-red-600 transition cursor-pointer"
             >
               <ArrowRightOnRectangleIcon className="h-5 w-5" />
             </button>
@@ -194,9 +198,7 @@ function SidebarItem({
           : "hover:bg-gray-100 text-gray-700"
       }`}
     >
-      <span className={`${collapsed ? "h-6 w-6" : "h-5 w-5"}`}>
-        {icon}
-      </span>
+      <span className={`${collapsed ? "h-6 w-6" : "h-5 w-5"}`}>{icon}</span>
 
       {!collapsed && label}
     </div>

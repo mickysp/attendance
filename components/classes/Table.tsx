@@ -77,14 +77,37 @@ export default function Table({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const getVisiblePages = () => {
+    const pages: number[] = [];
+
+    let start = Math.max(1, page - 1);
+    let end = Math.min(totalPages, page + 1);
+
+    if (page === 1) {
+      end = Math.min(3, totalPages);
+    }
+
+    if (page === totalPages) {
+      start = Math.max(1, totalPages - 2);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+
+    return pages;
+  };
+
   if (data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center">
-        <div className="mb-4 flex items-center justify-center w-20 h-20 rounded-full bg-gray-100">
-          <DocumentTextIcon className="w-10 h-10 text-gray-400" />
+        <div className="mb-4 flex items-center justify-center w-28 h-28 rounded-full bg-gray-100">
+          <img src="/not_exist_search.svg" className="w-28 h-28" />
         </div>
 
-        <p className="text-xs text-gray-400">ไม่พบรายการที่ค้นหา</p>
+        <p className="text-sm text-gray-400">
+          ไม่พบข้อมูลที่ค้นหา กรุณาลองใหม่อีกครั้ง
+        </p>
       </div>
     );
   }
@@ -115,10 +138,10 @@ export default function Table({
 
   return (
     <div>
-      <div className="rounded-xl border border-gray-200 overflow-hidden mt-8">
+      <div className="rounded-xl border border-gray-200 overflow-hidden mt-6">
         <div className="max-h-[520px] overflow-y-auto">
           <table className="w-full text-sm table-fixed">
-            <thead className="bg-blue-50 text-gray-600 sticky top-0 z-10">
+            <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold w-[100px]">
                   รหัสวิชา
@@ -230,7 +253,7 @@ export default function Table({
 
               {openPageSize && (
                 <div className="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg border border-gray-200">
-                  {[5, 10, 15, 20].map((size) => (
+                  {[5, 10, 15].map((size) => (
                     <button
                       key={size}
                       onClick={() => {
@@ -254,29 +277,29 @@ export default function Table({
             <button
               onClick={() => setPage((p) => Math.max(p - 1, 1))}
               disabled={page === 1}
-              className="px-3 py-2 text-[13px] rounded-md border border-gray-200 hover:bg-gray-100 disabled:opacity-40"
+              className="px-3 py-2 text-[13px] rounded-md border border-gray-200 hover:bg-gray-100 disabled:opacity-40 cursor-pointer"
             >
               ก่อนหน้า
             </button>
 
-            {[...Array(totalPages)].map((_, i) => (
+            {getVisiblePages().map((p) => (
               <button
-                key={i}
-                onClick={() => setPage(i + 1)}
-                className={`px-3.5 py-2 rounded-md border text-[13px] ${
-                  page === i + 1
+                key={p}
+                onClick={() => setPage(p)}
+                className={`px-3.5 py-2 rounded-md border text-[13px] cursor-pointer ${
+                  page === p
                     ? "bg-[var(--primary)] text-white border-[var(--primary)]"
                     : "border-gray-200 hover:bg-gray-100"
                 }`}
               >
-                {i + 1}
+                {p}
               </button>
             ))}
 
             <button
               onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
               disabled={page === totalPages}
-              className="px-4 py-2 text-[13px] rounded-md border border-gray-200 hover:bg-gray-100 disabled:opacity-40"
+              className="px-4 py-2 text-[13px] rounded-md border border-gray-200 hover:bg-gray-100 disabled:opacity-40 cursor-pointer"
             >
               ถัดไป
             </button>

@@ -11,7 +11,6 @@ import {
 import { useAlert } from "@/context/AlertContext";
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/layouts/Sidebar";
-import CheckInFormConfig from "@/components/check-in/CheckInFormConfig";
 import { useConfirm } from "@/context/ConfirmContext";
 
 export default function QRPage() {
@@ -24,7 +23,6 @@ export default function QRPage() {
 
   const [loading, setLoading] = useState(true);
   const [openQR, setOpenQR] = useState(false);
-  const [tab, setTab] = useState<"qr" | "form">("qr");
   const [saving, setSaving] = useState(false);
 
   const { showConfirm } = useConfirm();
@@ -144,7 +142,7 @@ export default function QRPage() {
         size - padding * 2,
         size - padding * 2,
       );
-    
+
       URL.revokeObjectURL(url);
 
       const link = document.createElement("a");
@@ -205,110 +203,44 @@ export default function QRPage() {
                   </div>
                 </div>
 
-                <div className="flex gap-6 mb-6 mt-2 border-b border-gray-200">
-                  <button
-                    onClick={() => setTab("qr")}
-                    className={`relative pb-3 text-sm font-medium transition-all duration-200 cursor-pointer ${
-                      tab === "qr"
-                        ? "text-blue-600"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    ลิงก์เช็คชื่อ
-                    <span
-                      className={`absolute left-0 -bottom-[1px] h-[2px] rounded-full bg-blue-500 transition-all duration-300 ${
-                        tab === "qr" ? "w-full opacity-100" : "w-0 opacity-0"
-                      }`}
-                    />
-                  </button>
-
-                  <button
-                    onClick={() => setTab("form")}
-                    className={`relative pb-3 text-sm font-medium transition-all duration-200 cursor-pointer ${
-                      tab === "form"
-                        ? "text-blue-600"
-                        : "text-gray-500 hover:text-gray-700"
-                    }`}
-                  >
-                    ตัวอย่างแบบฟอร์มเช็คชื่อ
-                    <span
-                      className={`absolute left-0 -bottom-[1px] h-[2px] rounded-full bg-blue-500 transition-all duration-300 ${
-                        tab === "form" ? "w-full opacity-100" : "w-0 opacity-0"
-                      }`}
-                    />
-                  </button>
-                </div>
-
                 <div className="flex flex-col h-full">
-                  {tab === "qr" && (
-                    <>
-                      <div className="mb-6">
-                        <label className="text-sm text-gray-700">
-                          ลิงก์เช็คชื่อ
-                        </label>
+                  <div className="mb-6">
+                    <label className="text-sm text-gray-700">
+                      ลิงก์เช็คชื่อ
+                    </label>
 
-                        <div className="flex gap-2 mt-1">
-                          <input
-                            value={link}
-                            readOnly
-                            className="form-input-card flex-1 text-sm"
-                          />
-
-                          <button
-                            onClick={handleCopy}
-                            className="px-3 border rounded-md hover:bg-gray-100 cursor-pointer"
-                          >
-                            <ClipboardIcon className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-
-                      <div className="flex-1 flex flex-col items-center justify-center gap-3">
-                        {" "}
-                        <div className="qr-code relative p-5 border border-gray-300 rounded-2xl bg-white">
-                          {" "}
-                          <QRCode value={link || "loading"} size={300} />
-                          <button
-                            onClick={() => setOpenQR(true)}
-                            className="absolute top-2 right-2 bg-white border border-gray-300 rounded-md p-1 hover:bg-gray-100 cursor-pointer"
-                          >
-                            <ArrowsPointingOutIcon className="w-4 h-4 text-gray-600" />
-                          </button>
-                        </div>
-                        <p className="text-sm text-gray-500 text-center">
-                          QR Code เช็คชื่อ
-                        </p>
-                      </div>
-                    </>
-                  )}
-
-                  {tab === "form" && (
-                    <div className="bg-white border border-gray-200 rounded-2xl shadow-sm">
-                      <CheckInFormConfig
-                        value={formConfig}
-                        onChange={setFormConfig}
+                    <div className="flex gap-2 mt-1">
+                      <input
+                        value={link}
+                        readOnly
+                        className="form-input-card flex-1 text-sm"
                       />
 
-                      <div className="p-5 pt-0 flex justify-end">
-                        <button
-                          disabled={saving}
-                          onClick={() =>
-                            showConfirm(
-                              "คุณต้องการบันทึกการตั้งค่าแบบฟอร์มใช่หรือไม่",
-                              handleSave,
-                            )
-                          }
-                          className={`px-7 py-2.5 rounded-md text-sm text-white cursor-pointer ${
-                            saving
-                              ? "bg-gray-400 cursor-not-allowed"
-                              : "bg-[var(--primary)] hover:bg-blue-700"
-                          }`}
-                        >
-                          {saving ? "กำลังบันทึก..." : "บันทึก"}
-                        </button>
-                      </div>
+                      <button
+                        onClick={handleCopy}
+                        className="px-3 border rounded-md hover:bg-gray-100 cursor-pointer"
+                      >
+                        <ClipboardIcon className="w-4 h-4" />
+                      </button>
                     </div>
-                  )}
+                  </div>
+
+                  <div className="flex-1 flex flex-col items-center justify-center gap-3">
+                    <div className="qr-code relative p-5 border border-gray-300 rounded-2xl bg-white">
+                      <QRCode value={link || "loading"} size={300} />
+
+                      <button
+                        onClick={() => setOpenQR(true)}
+                        className="absolute top-2 right-2 bg-white border border-gray-300 rounded-md p-1 hover:bg-gray-100 cursor-pointer"
+                      >
+                        <ArrowsPointingOutIcon className="w-4 h-4 text-gray-600" />
+                      </button>
+                    </div>
+
+                    <p className="text-sm text-gray-500 text-center">
+                      QR Code เช็คชื่อ
+                    </p>
+                  </div>
                 </div>
               </>
             )}

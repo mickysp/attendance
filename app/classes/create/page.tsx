@@ -31,9 +31,9 @@ export default function CreateClassPage() {
   const { showAlert } = useAlert();
   const [loading, setLoading] = useState(false);
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const branchRef = useRef<HTMLDivElement>(null);
-  const ref = useRef<HTMLDivElement>(null);
   const { showConfirm } = useConfirm();
+  const teacherRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const branchRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [branchOptions, setBranchOptions] = useState<string[]>([]);
   const [loadingBranches, setLoadingBranches] = useState(true);
@@ -58,11 +58,21 @@ export default function CreateClassPage() {
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) {
+      if (
+        openIndex !== null &&
+        teacherRefs.current[openIndex] &&
+        !teacherRefs.current[openIndex]?.contains(e.target as Node)
+      ) {
         setOpenIndex(null);
       }
 
-      if (branchRef.current && !branchRef.current.contains(e.target as Node)) {
+      if (
+        openBranchIndex &&
+        branchRefs.current[openBranchIndex.classIndex] &&
+        !branchRefs.current[openBranchIndex.classIndex]?.contains(
+          e.target as Node,
+        )
+      ) {
         setOpenBranchIndex(null);
       }
     };
@@ -283,16 +293,22 @@ export default function CreateClassPage() {
                       />
                     </div>
 
-                    <div ref={ref} className="relative">
+                    <div
+                      ref={(el) => {
+                        teacherRefs.current[index] = el;
+                      }}
+                      className="relative"
+                    >
                       <label className="text-sm text-gray-800">
                         อาจารย์ผู้สอน
                       </label>
 
                       <button
                         type="button"
-                        onClick={() =>
-                          setOpenIndex(openIndex === index ? null : index)
-                        }
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setOpenIndex(openIndex === index ? null : index);
+                        }}
                         className="form-input-card text-sm flex items-center justify-between w-full"
                       >
                         {item.teacher?.name || "เลือกอาจารย์"}{" "}
@@ -317,7 +333,8 @@ export default function CreateClassPage() {
                               return (
                                 <button
                                   key={t._id}
-                                  onClick={() => {
+                                  onClick={(e) => {
+                                    e.stopPropagation();
                                     const updated = [...classes];
                                     updated[index].teacher = t;
                                     setClasses(updated);
@@ -340,7 +357,11 @@ export default function CreateClassPage() {
                     </div>
                   </div>
 
-                  <div ref={branchRef}>
+                  <div
+                    ref={(el) => {
+                      branchRefs.current[index] = el;
+                    }}
+                  >
                     <label className="text-sm text-gray-800">สาขา</label>
 
                     <div className="space-y-2 mt-2">
@@ -348,14 +369,15 @@ export default function CreateClassPage() {
                         <div key={bIndex} className="flex gap-2 relative">
                           <button
                             type="button"
-                            onClick={() =>
+                            onClick={(e) => {
+                              e.stopPropagation();
                               setOpenBranchIndex(
                                 openBranchIndex?.classIndex === index &&
                                   openBranchIndex?.branchIndex === bIndex
                                   ? null
                                   : { classIndex: index, branchIndex: bIndex },
-                              )
-                            }
+                              );
+                            }}
                             className="form-input-card text-sm flex items-center justify-between w-full"
                           >
                             {branch || "เลือกสาขา"}
@@ -469,8 +491,8 @@ export default function CreateClassPage() {
                 className={`px-5 py-2.5 rounded-md text-white text-sm transition
                 ${
                   loading || !isFormValid
-                  ? "bg-gray-400"
-                  : "bg-[var(--primary)] hover:bg-[var(--primary-hover)] cursor-pointer"
+                    ? "bg-gray-400"
+                    : "bg-[var(--primary)] hover:bg-[var(--primary-hover)] cursor-pointer"
                 }`}
               >
                 {loading ? "กำลังบันทึก..." : "บันทึก"}
