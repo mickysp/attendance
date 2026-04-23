@@ -4,6 +4,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import {
   ChevronDownIcon,
   MagnifyingGlassIcon,
+  XMarkIcon,
 } from "@heroicons/react/24/outline";
 
 type Branch = {
@@ -35,7 +36,6 @@ export default function StudentFilter({ data, onChange }: Props) {
 
   const [openClass, setOpenClass] = useState(false);
   const [openBranch, setOpenBranch] = useState(false);
-  const [openSection, setOpenSection] = useState(false);
 
   const classRef = useRef<HTMLDivElement>(null);
   const branchRef = useRef<HTMLDivElement>(null);
@@ -47,8 +47,6 @@ export default function StudentFilter({ data, onChange }: Props) {
         setOpenClass(false);
       if (branchRef.current && !branchRef.current.contains(e.target as Node))
         setOpenBranch(false);
-      if (sectionRef.current && !sectionRef.current.contains(e.target as Node))
-        setOpenSection(false);
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -61,8 +59,6 @@ export default function StudentFilter({ data, onChange }: Props) {
     const all = data.flatMap((c) => (c.branches || []).map((b) => b.name));
     return [...new Set(all)];
   }, [data]);
-
-  const sectionOptions = ["1", "2", "3"];
 
   const handleChange = (k: string, c: string, b: string, s: string) => {
     onChange({ keyword: k, className: c, branch: b, section: s });
@@ -86,14 +82,26 @@ export default function StudentFilter({ data, onChange }: Props) {
             setKeyword(e.target.value);
             handleChange(e.target.value, className, branch, section);
           }}
-          className="w-full pl-9 pr-3 py-2.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+          className="w-full pl-9 pr-9 py-2.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-200"
         />
+
+        {keyword && (
+          <button
+            onClick={() => {
+              setKeyword("");
+              handleChange("", className, branch, section);
+            }}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 cursor-pointer"
+          >
+            <XMarkIcon className="w-5 h-5 text-blue-500" />
+          </button>
+        )}
       </div>
 
       <div ref={classRef} className="relative w-full md:w-[260px]">
         <button
           onClick={() => setOpenClass(!openClass)}
-          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-md bg-white flex items-center justify-between hover:bg-gray-50 cursor-pointer"
+          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-md bg-white flex items-center justify-between hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-gray-200 cursor-pointer"
         >
           <span
             className={`truncate block max-w-[180px] ${
@@ -102,7 +110,7 @@ export default function StudentFilter({ data, onChange }: Props) {
           >
             {className ? truncate(className) : "เลือกวิชา"}
           </span>
-          <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+          <ChevronDownIcon className="w-4 h-4 text-blue-500" />
         </button>
 
         {openClass && (
@@ -147,7 +155,7 @@ export default function StudentFilter({ data, onChange }: Props) {
       <div ref={branchRef} className="relative w-full md:w-[260px]">
         <button
           onClick={() => setOpenBranch(!openBranch)}
-          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-md bg-white flex items-center justify-between hover:bg-gray-50 cursor-pointer"
+          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-md bg-white flex items-center justify-between hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-gray-200 cursor-pointer"
         >
           <span
             className={`truncate block max-w-[180px] ${
@@ -156,7 +164,7 @@ export default function StudentFilter({ data, onChange }: Props) {
           >
             {branch ? truncate(branch) : "เลือกสาขา"}
           </span>
-          <ChevronDownIcon className="w-4 h-4 text-gray-400" />
+          <ChevronDownIcon className="w-4 h-4 text-blue-500" />
         </button>
 
         {openBranch && (
@@ -198,66 +206,11 @@ export default function StudentFilter({ data, onChange }: Props) {
         )}
       </div>
 
-      <div ref={sectionRef} className="relative w-full md:w-[260px]">
-        <button
-          onClick={() => setOpenSection(!openSection)}
-          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-md bg-white flex items-center justify-between hover:bg-gray-50 cursor-pointer"
-        >
-          <span
-            className={`truncate block max-w-[180px] ${
-              section ? "text-gray-800" : "text-gray-400"
-            }`}
-          >
-            {section ? `Section ${section}` : "เลือก Section"}
-          </span>
-          <ChevronDownIcon className="w-4 h-4 text-gray-400" />
-        </button>
-
-        {openSection && (
-          <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-md shadow">
-            <button
-              onClick={() => {
-                setSection("");
-                handleChange(keyword, className, branch, "");
-                setOpenSection(false);
-              }}
-              className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 cursor-pointer"
-            >
-              ทั้งหมด
-            </button>
-
-            {sectionOptions.map((s) => {
-              const isSelected = section === s;
-
-              return (
-                <button
-                  key={s}
-                  onClick={() => {
-                    setSection(s);
-                    handleChange(keyword, className, branch, s);
-                    setOpenSection(false);
-                  }}
-                  className={`block w-full px-3 py-2 text-left text-sm flex items-center justify-between
-                  ${
-                    isSelected
-                      ? "bg-blue-50 text-blue-600 font-medium"
-                      : "hover:bg-gray-100"
-                  } cursor-pointer`}
-                >
-                  <span>Section {s}</span>
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
       <button
         onClick={() => {
           setKeyword("");
           setClassName("");
           setBranch("");
-          setSection("");
           handleChange("", "", "", "");
         }}
         className="text-sm text-blue-500 hover:underline whitespace-nowrap cursor-pointer"

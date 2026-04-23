@@ -16,6 +16,12 @@ type StudentDoc = {
 type StudentClassDoc = {
   studentId: ObjectId;
   className: string;
+  section?: string;
+};
+
+type ClassItem = {
+  className: string;
+  section?: string;
 };
 
 const getCurrentAcademicYear = (): number =>
@@ -74,7 +80,7 @@ export async function GET(req: Request) {
       })
       .toArray();
 
-    const classMap = new Map<string, string[]>();
+    const classMap = new Map<string, ClassItem[]>();
 
     relations.forEach((r) => {
       const key = r.studentId.toString();
@@ -83,20 +89,33 @@ export async function GET(req: Request) {
         classMap.set(key, []);
       }
 
-      classMap.get(key)!.push(r.className);
+      classMap.get(key)!.push({
+        className: r.className,
+        section: r.section,
+      });
     });
 
-    let data = students.map((s) => ({
-      _id: s._id.toString(),
-      studentId: s.studentId,
-      fullName: s.fullName,
-      email: s.email,
-      classNames: classMap.get(s._id.toString()) || [],
-      section: s.section,
-      major: s.major || "",
-      academicYear: s.academicYear || null,
-      createdAt: s.createdAt,
-    }));
+    let data = students.map((s) => {
+      const classes = classMap.get(s._id.toString()) || [];
+
+      return {
+        _id: s._id.toString(),
+        studentId: s.studentId,
+        fullName: s.fullName,
+        email: s.email,
+        classNames: classes.map((c) => c.className),
+        classes: classes.map((c) => ({
+          className: c.className,
+          section: c.section,
+          academicYear: s.academicYear,
+        })),
+
+        section: s.section,
+        major: s.major || "",
+        academicYear: s.academicYear || null,
+        createdAt: s.createdAt,
+      };
+    });
 
     if (classFilter) {
       data = data.filter((d) =>

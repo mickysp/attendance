@@ -210,6 +210,7 @@ export default function StudentsPage() {
   const handleDeleteSuccess = (id: string) => {
     setData((prev) => prev.filter((s) => s._id !== id));
   };
+  
   return (
     <div className="flex h-screen overflow-hidden bg-blue-50">
       <Sidebar />
@@ -225,7 +226,7 @@ export default function StudentsPage() {
         )}
 
         {!loading && (
-          <div className="flex flex-col h-[90vh] bg-white rounded-2xl shadow-sm">
+          <div className="flex flex-col h-[90vh] bg-white rounded-2xl">
             <div className="px-6 pt-6 flex items-start justify-between">
               <div>
                 <h1 className="text-[26px] font-semibold text-gray-800">
@@ -249,7 +250,7 @@ export default function StudentsPage() {
                     <button
                       type="button"
                       onClick={() => setOpenYear(!openYear)}
-                      className="h-[40px] px-3 border border-gray-200 rounded-md bg-white flex items-center justify-between text-sm hover:bg-gray-50 w-[100px] cursor-pointer"
+                      className="h-[40px] px-3 border border-gray-200 rounded-md bg-white flex items-center justify-between text-sm hover:bg-gray-50 w-[100px] focus:outline-none focus:ring-1 focus:ring-gray-200 cursor-pointer"
                     >
                       <span
                         className={
@@ -370,6 +371,13 @@ export default function StudentsPage() {
                     <StudentTable
                       data={filteredData}
                       onDeleteSuccess={handleDeleteSuccess}
+                      onUpdateSuccess={(updatedStudent) => {
+                        setData((prev) =>
+                          prev.map((s) =>
+                            s._id === updatedStudent._id ? updatedStudent : s,
+                          ),
+                        );
+                      }}
                     />
                   </div>
                 </>
@@ -537,7 +545,9 @@ export default function StudentsPage() {
                   <label htmlFor="upload" className="cursor-pointer">
                     <DocumentArrowUpIcon className="w-6 h-6 mx-auto text-gray-400 mb-2" />
                     <p className="text-sm text-gray-500">เลือกไฟล์ Excel</p>
-                    <p className="text-xs text-gray-400 mt-1">รองรับไฟล์ .xlsx และชื่อไฟล์ภาษาไทย เท่านั้น</p>
+                    <p className="text-xs text-gray-400 mt-1">
+                      รองรับไฟล์ .xlsx และชื่อไฟล์ภาษาไทย เท่านั้น
+                    </p>
 
                     {file && (
                       <p className="text-xs text-blue-600 mt-1">{file.name}</p>
