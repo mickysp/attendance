@@ -117,7 +117,7 @@ export default function StudentTable({
       <div className="rounded-xl border border-gray-200 overflow-hidden mt-6">
         <div className="max-h-[520px] overflow-y-auto">
           <table className="w-full text-sm table-fixed">
-            <thead className="bg-blue-50 text-gray-600 sticky top-0 z-10">
+            <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold w-[160px]">
                   รหัสนักศึกษา

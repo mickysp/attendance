@@ -73,9 +73,7 @@ export default function Sidebar() {
 
               <div>
                 <h1 className="text-lg font-semibold">Attendy</h1>
-                <p className="text-xs text-gray-500">
-                  Management System
-                </p>
+                <p className="text-xs text-gray-500">Management System</p>
               </div>
             </div>
           )}
@@ -89,22 +87,12 @@ export default function Sidebar() {
         </div>
 
         <nav className="flex flex-col gap-2 text-sm font-medium">
-          {user.role === "Admin" && (
-            <SidebarItem
-              icon={<HomeIcon />}
-              label="Dashboard"
-              collapsed={collapsed}
-              active={pathname === "/dashboard"}
-              onClick={() => router.push("/dashboard")}
-            />
-          )}
-
           <SidebarItem
-            icon={<CalendarDaysIcon />}
-            label="Attendance"
+            icon={<HomeIcon />}
+            label="Dashboard"
             collapsed={collapsed}
-            active={pathname === "/attendance"}
-            onClick={() => router.push("/attendance")}
+            active={pathname === "/dashboard"}
+            onClick={() => router.push("/dashboard")}
           />
 
           <SidebarItem
@@ -121,6 +109,14 @@ export default function Sidebar() {
             collapsed={collapsed}
             active={pathname.startsWith("/students")}
             onClick={() => router.push("/students")}
+          />
+
+          <SidebarItem
+            icon={<CalendarDaysIcon />}
+            label="Attendance"
+            collapsed={collapsed}
+            active={pathname === "/attendance"}
+            onClick={() => router.push("/attendance")}
           />
         </nav>
       </div>
@@ -194,9 +190,7 @@ function SidebarItem({
           : "hover:bg-gray-100 text-gray-700"
       }`}
     >
-      <span className={`${collapsed ? "h-6 w-6" : "h-5 w-5"}`}>
-        {icon}
-      </span>
+      <span className={`${collapsed ? "h-6 w-6" : "h-5 w-5"}`}>{icon}</span>
 
       {!collapsed && label}
     </div>

@@ -17,7 +17,7 @@ export default function AttendancePage() {
   }, []);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-blue-50">
       <Sidebar />
 
       <div className="flex-1 overflow-y-auto p-6 font-noto relative">
@@ -31,7 +31,7 @@ export default function AttendancePage() {
         )}
 
         {!loading && !hasData && (
-          <div className="flex flex-col h-[85vh] bg-white rounded-2xl shadow-sm">
+          <div className="flex flex-col h-[90vh] bg-white rounded-2xl shadow-sm">
             <div className="px-6 py-4">
               <h1 className="text-2xl font-semibold text-gray-800">
                 Attendance

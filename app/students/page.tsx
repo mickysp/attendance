@@ -211,7 +211,7 @@ export default function StudentsPage() {
     setData((prev) => prev.filter((s) => s._id !== id));
   };
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-blue-50">
       <Sidebar />
 
       <div className="flex-1 overflow-y-auto p-6 font-noto relative">
@@ -277,7 +277,7 @@ export default function StudentsPage() {
                                 setOpenYear(false);
                                 fetchStudents(y);
                               }}
-                              className={`block w-full px-3 py-2 text-left text-sm
+                              className={`block w-full px-3 py-2 text-left text-sm cursor-pointer
                               ${
                                 selectedYear === y
                                   ? "bg-blue-50 text-blue-600 font-medium"
