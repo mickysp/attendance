@@ -73,7 +73,7 @@ export default function LoginForm() {
         if (role === "admin") {
           router.push("/dashboard");
         } else if (role === "teacher") {
-          router.push("/attendance");
+          router.push("/dashboard");
         } else {
           showAlert("role ไม่ถูกต้อง", "error");
         }

@@ -64,7 +64,7 @@ export default function ClassFilter({ data, onChange }: Props) {
             setKeyword(e.target.value);
             handleChange(e.target.value, branch);
           }}
-          className="w-full pl-9 pr-9 py-2.5 text-[14px] border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-200 text-xs"
+          className="w-full pl-9 pr-9 py-[9px] text-[14px] border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-200 text-xs"
         />
 
         {keyword && (
@@ -84,7 +84,7 @@ export default function ClassFilter({ data, onChange }: Props) {
         <button
           type="button"
           onClick={() => setOpen(!open)}
-          className="w-full px-3 py-2.5 text-[14px] border border-gray-200 rounded-md bg-white flex items-center justify-between hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-gray-200 text-xs cursor-pointer"
+          className="w-full px-3 py-[9px] text-[14px] border border-gray-200 rounded-md bg-white flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-gray-200 text-xs cursor-pointer"
         >
           <span className={branch ? "text-gray-800" : "text-gray-400"}>
             {branch || "เลือกสาขา"}

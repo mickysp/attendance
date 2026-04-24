@@ -82,7 +82,7 @@ export default function StudentFilter({ data, onChange }: Props) {
             setKeyword(e.target.value);
             handleChange(e.target.value, className, branch, section);
           }}
-          className="w-full pl-9 pr-9 py-2.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-200"
+          className="w-full pl-9 pr-9 py-[9px] text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-200"
         />
 
         {keyword && (
@@ -101,7 +101,7 @@ export default function StudentFilter({ data, onChange }: Props) {
       <div ref={classRef} className="relative w-full md:w-[260px]">
         <button
           onClick={() => setOpenClass(!openClass)}
-          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-md bg-white flex items-center justify-between hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-gray-200 cursor-pointer"
+          className="w-full px-3 py-[9px] text-sm border border-gray-200 rounded-md bg-white flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-gray-200 cursor-pointer"
         >
           <span
             className={`truncate block max-w-[180px] ${
@@ -155,7 +155,7 @@ export default function StudentFilter({ data, onChange }: Props) {
       <div ref={branchRef} className="relative w-full md:w-[260px]">
         <button
           onClick={() => setOpenBranch(!openBranch)}
-          className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-md bg-white flex items-center justify-between hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-gray-200 cursor-pointer"
+          className="w-full px-3 py-[9px] text-sm border border-gray-200 rounded-md bg-white flex items-center justify-between focus:outline-none focus:ring-1 focus:ring-gray-200 cursor-pointer"
         >
           <span
             className={`truncate block max-w-[180px] ${

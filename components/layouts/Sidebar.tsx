@@ -86,46 +86,58 @@ export default function Sidebar() {
           </button>
         </div>
 
-        <nav className="flex flex-col gap-4 text-sm font-medium">
-          <SidebarItem
-            icon={<HomeIcon />}
-            label="Dashboard"
-            collapsed={collapsed}
-            active={pathname === "/dashboard"}
-            onClick={() => router.push("/dashboard")}
-          />
+        <nav className="flex flex-col gap-6 text-sm font-medium">
+          {!collapsed && (
+            <p className="text-xs text-gray-400 uppercase px-3">Menu</p>
+          )}
 
-          <SidebarItem
-            icon={<BookOpenIcon />}
-            label="Classes"
-            collapsed={collapsed}
-            active={pathname.startsWith("/classes")}
-            onClick={() => router.push("/classes")}
-          />
+          <div className="flex flex-col gap-2">
+            <SidebarItem
+              icon={<HomeIcon />}
+              label="Dashboard"
+              collapsed={collapsed}
+              active={pathname === "/dashboard"}
+              onClick={() => router.push("/dashboard")}
+            />
 
-          <SidebarItem
-            icon={<UserGroupIcon />}
-            label="Students"
-            collapsed={collapsed}
-            active={pathname.startsWith("/students")}
-            onClick={() => router.push("/students")}
-          />
+            <SidebarItem
+              icon={<BookOpenIcon />}
+              label="Classes"
+              collapsed={collapsed}
+              active={pathname.startsWith("/classes")}
+              onClick={() => router.push("/classes")}
+            />
 
-          <SidebarItem
-            icon={<IdentificationIcon />}
-            label="Attendance"
-            collapsed={collapsed}
-            active={pathname === "/attendance"}
-            onClick={() => router.push("/attendance")}
-          />
+            <SidebarItem
+              icon={<UserGroupIcon />}
+              label="Students"
+              collapsed={collapsed}
+              active={pathname.startsWith("/students")}
+              onClick={() => router.push("/students")}
+            />
 
-          <SidebarItem
-            icon={<ClipboardDocumentCheckIcon />}
-            label="ตัวอย่างแบบฟอร์มเช็คชื่อ"
-            collapsed={collapsed}
-            active={pathname.startsWith("/checkinform")}
-            onClick={() => router.push("/checkinform")}
-          />
+            <SidebarItem
+              icon={<IdentificationIcon />}
+              label="Attendance"
+              collapsed={collapsed}
+              active={pathname === "/attendance"}
+              onClick={() => router.push("/attendance")}
+            />
+          </div>
+
+          {!collapsed && (
+            <p className="text-xs text-gray-400 uppercase px-3 mt-2">Other</p>
+          )}
+
+          <div className="flex flex-col gap-2">
+            <SidebarItem
+              icon={<ClipboardDocumentCheckIcon />}
+              label="ตัวอย่างแบบฟอร์มเช็คชื่อ"
+              collapsed={collapsed}
+              active={pathname.startsWith("/checkinform")}
+              onClick={() => router.push("/checkinform")}
+            />
+          </div>
         </nav>
       </div>
 

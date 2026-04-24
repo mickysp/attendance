@@ -210,23 +210,23 @@ export default function StudentsPage() {
   const handleDeleteSuccess = (id: string) => {
     setData((prev) => prev.filter((s) => s._id !== id));
   };
-  
+
   return (
     <div className="flex h-screen overflow-hidden bg-blue-50">
       <Sidebar />
 
-      <div className="flex-1 overflow-y-auto p-6 font-noto relative">
+      <div className="flex-1 p-6 font-noto relative">
         {loading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-300">
             <div className="flex flex-col items-center gap-4">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-500 border-t-transparent"></div>
-              <p className="text-gray-600 text-sm">กำลังโหลด...</p>
+              <div className="h-14 w-14 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
+              <p className="text-gray-600 text-base text-white">กำลังโหลด...</p>
             </div>
           </div>
         )}
 
         {!loading && (
-          <div className="flex flex-col h-[90vh] bg-white rounded-2xl">
+          <div className="flex flex-col bg-white rounded-2xl">
             <div className="px-6 pt-6 flex items-start justify-between">
               <div>
                 <h1 className="text-[26px] font-semibold text-gray-800">
@@ -363,11 +363,11 @@ export default function StudentsPage() {
 
               {hasInitialData && data.length > 0 && (
                 <>
-                  <div className="text-base text-gray-600 font-semibold mt-2">
+                  <div className="text-base text-gray-600 font-semibold mt-2 mb-7">
                     Student ทั้งหมด {filteredData.length} รายการ
                   </div>
 
-                  <div className="w-full">
+                  <div className="w-full pb-6.5">
                     <StudentTable
                       data={filteredData}
                       onDeleteSuccess={handleDeleteSuccess}
@@ -389,7 +389,7 @@ export default function StudentsPage() {
 
       {openImport && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 font-noto">
-          <div className="w-full max-w-lg bg-white rounded-2xl shadow-sm p-6">
+          <div className="w-full max-w-xl bg-white rounded-2xl shadow-sm p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="p-2 rounded-lg bg-[var(--card)]">
                 <DocumentArrowUpIcon className="w-5 h-5 text-gray-700" />

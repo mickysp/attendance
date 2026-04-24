@@ -15,7 +15,7 @@ export async function POST(req: Request) {
       );
     }
 
-    if (!["Teacher", "Admin"].includes(role)) {
+    if (!["Teaching Assistant", "Teacher"].includes(role)) {
       return NextResponse.json(
         { success: false, message: "role ไม่ถูกต้อง" },
         { status: 400 },

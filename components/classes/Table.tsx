@@ -138,8 +138,8 @@ export default function Table({
 
   return (
     <div>
-      <div className="rounded-xl border border-gray-200 overflow-hidden mt-6">
-        <div className="max-h-[520px] overflow-y-auto">
+      <div className="rounded-xl border border-gray-200 overflow-hidden">
+        <div className="h-[510px] overflow-auto">
           <table className="w-full text-sm table-fixed">
             <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10">
               <tr>
@@ -155,7 +155,7 @@ export default function Table({
                 <th className="px-4 py-3 text-left font-semibold w-[200px]">
                   อาจารย์ผู้สอน
                 </th>
-                <th className="px-4 py-3 text-left font-semibold w-[240px]">
+                <th className="px-4 py-3 text-left font-semibold w-[300px]">
                   จัดการ
                 </th>
               </tr>
@@ -171,7 +171,7 @@ export default function Table({
                     {item.classCode || "-"}
                   </td>
 
-                  <td className="px-4 py-2 text-sm truncate">
+                  <td className="px-4 py-2 text-sm whitespace-normal break-words">
                     {item.className}
                   </td>
 
@@ -210,7 +210,7 @@ export default function Table({
                         className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-blue-200 text-blue-600 hover:bg-blue-50 text-sm cursor-pointer"
                       >
                         <ClipboardDocumentCheckIcon className="w-4 h-4" />
-                        เช็คชื่อ
+                        ลิงก์เช็คชื่อ
                       </button>
 
                       <button
@@ -245,7 +245,7 @@ export default function Table({
             <div ref={pageSizeRef} className="relative">
               <button
                 onClick={() => setOpenPageSize(!openPageSize)}
-                className="form-input-card flex items-center justify-between gap-2 px-3 py-1 text-xs min-w-[60px]"
+                className="form-input-card flex items-center justify-between gap-2 px-3 py-1 text-xs min-w-[60px] cursor-pointer"
               >
                 {itemsPerPage}
                 <ChevronDownIcon className="w-3 h-3 text-gray-400" />
@@ -253,7 +253,7 @@ export default function Table({
 
               {openPageSize && (
                 <div className="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg border border-gray-200">
-                  {[5, 10, 15].map((size) => (
+                  {[10, 15, 20].map((size) => (
                     <button
                       key={size}
                       onClick={() => {
@@ -261,7 +261,7 @@ export default function Table({
                         setPage(1);
                         setOpenPageSize(false);
                       }}
-                      className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100"
+                      className="block w-full px-3 py-2 text-left text-sm hover:bg-gray-100 cursor-pointer"
                     >
                       {size}
                     </button>
@@ -273,7 +273,7 @@ export default function Table({
             <span>จากทั้งหมด {data.length} รายการ</span>
           </div>
 
-          <div className="flex items-center gap-1 mt-2">
+          <div className="flex items-center gap-2 mt-2">
             <button
               onClick={() => setPage((p) => Math.max(p - 1, 1))}
               disabled={page === 1}

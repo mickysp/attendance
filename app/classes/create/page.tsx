@@ -56,6 +56,14 @@ export default function CreateClassPage() {
     },
   ]);
 
+  const completedCount = classes.filter(
+    (c) =>
+      c.className.trim() !== "" &&
+      c.classCode.trim() !== "" &&
+      c.teacher !== null &&
+      c.branches.some((b) => b.trim() !== ""),
+  ).length;
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (
@@ -226,22 +234,31 @@ export default function CreateClassPage() {
   });
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-blue-50">
       <Sidebar />
 
       <div className="flex-1 overflow-y-auto p-6 font-noto">
-        <div className="bg-white rounded-2xl shadow-sm p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <button
-              onClick={() => router.push("/classes")}
-              className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 hover:bg-gray-100 transition cursor-pointer"
-            >
-              <ArrowLeftIcon className="w-3 h-3 text-gray-700" />
-            </button>
+        <div className="bg-white rounded-2xl shadow-sm pt-6 px-6 pb-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.push("/classes")}
+                className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 hover:bg-gray-100 transition cursor-pointer"
+              >
+                <ArrowLeftIcon className="w-3 h-3 text-gray-700" />
+              </button>
 
-            <h1 className="text-2xl font-semibold text-gray-800">
-              เพิ่มรายวิชา
-            </h1>
+              <h1 className="text-[26px] font-semibold text-gray-800">
+                เพิ่มรายวิชา
+              </h1>
+            </div>
+
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 border border-blue-100">
+              <span className="text-sm text-gray-500">จำนวนวิชาที่เพิ่ม</span>
+              <span className="text-sm font-semibold text-blue-600">
+                {completedCount}
+              </span>
+            </div>
           </div>
 
           <div className="space-y-4">

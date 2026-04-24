@@ -155,7 +155,7 @@ export default function QRPage() {
   };
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50">
+    <div className="flex h-screen overflow-hidden bg-blue-50">
       <Sidebar />
 
       <div className="flex-1 overflow-y-auto p-6 font-noto relative">
@@ -178,7 +178,7 @@ export default function QRPage() {
                 <ArrowLeftIcon className="w-4 h-4 text-gray-700" />
               </button>
 
-              <h1 className="text-2xl font-semibold text-gray-800">
+              <h1 className="text-[26px] font-semibold text-gray-800">
                 ข้อมูลแบบฟอร์มเช็คชื่อ
               </h1>
 
