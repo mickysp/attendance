@@ -1,104 +1,120 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 
+type ConfigFields = {
+  prefix: boolean;
+  firstname: boolean;
+  lastname: boolean;
+  studentId: boolean;
+  email: boolean;
+  section: boolean;
+  photo: boolean;
+  note: boolean;
+  location: boolean;
+};
+
 type FormConfig = {
-  classId: string;
-  type: "config";
-  config: {
-    name: boolean;
-    studentId: boolean;
-    email: boolean;
-    section: boolean;
-    photo: boolean;
-    location: boolean;
-  };
+  type: "global_config";
+  config: ConfigFields;
   updatedAt: Date;
 };
+
+const defaultConfig: ConfigFields = {
+  prefix: true,
+  firstname: true,
+  lastname: true,
+  studentId: true,
+  email: true,
+  section: true,
+  photo: true,
+  note: true,
+  location: true,
+};
+
+function validateConfig(config: unknown): config is ConfigFields {
+  if (typeof config !== "object" || config === null) return false;
+
+  const c = config as Record<string, unknown>;
+
+  const fields: (keyof ConfigFields)[] = [
+    "prefix",
+    "firstname",
+    "lastname",
+    "studentId",
+    "email",
+    "section",
+    "photo",
+    "note",
+    "location",
+  ];
+
+  return fields.every((f) => typeof c[f] === "boolean");
+}
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { classId, config } = body;
+    const { config } = body;
 
-    if (!classId) {
-      return NextResponse.json(
-        { success: false, message: "missing classId" },
-        { status: 400 },
-      );
-    }
-
-    if (!config) {
-      return NextResponse.json(
-        { success: false, message: "missing config" },
-        { status: 400 },
-      );
-    }
-
-    if (typeof config.name !== "boolean") {
+    if (!validateConfig(config)) {
       return NextResponse.json(
         { success: false, message: "invalid config" },
-        { status: 400 },
+        { status: 400 }
       );
     }
 
     const client = await clientPromise;
     const db = client.db("attendance");
-    const checkIn = db.collection("checkIn");
+    const checkIn = db.collection<FormConfig>("checkIn");
 
-    const newConfig: FormConfig = {
-      classId,
-      type: "config",
-      config,
-      updatedAt: new Date(),
-    };
+    const safeConfig = { ...defaultConfig, ...config };
 
     await checkIn.updateOne(
-      { classId, type: "config" },
-      { $set: newConfig },
-      { upsert: true },
+      { type: "global_config" },
+      {
+        $set: {
+          type: "global_config",
+          config: safeConfig,
+          updatedAt: new Date(),
+        },
+      },
+      { upsert: true }
     );
 
     return NextResponse.json({
       success: true,
-      message: "บันทึก config สำเร็จ",
+      config: safeConfig,
     });
-  } catch (error) {
+  } catch (err) {
     return NextResponse.json(
-      { success: false, message: (error as Error).message },
-      { status: 500 },
+      { success: false, message: (err as Error).message },
+      { status: 500 }
     );
   }
 }
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(req.url);
-    const classId = searchParams.get("classId");
-
-    if (!classId) {
-      return NextResponse.json(
-        { success: false, message: "missing classId" },
-        { status: 400 },
-      );
-    }
-
     const client = await clientPromise;
     const db = client.db("attendance");
-    const checkIn = db.collection("checkIn");
+    const checkIn = db.collection<FormConfig>("checkIn");
 
-    const config = await checkIn.findOne({
-      classId,
-      type: "config",
+    const result = await checkIn.findOne({
+      type: "global_config",
     });
+
+    const config = result?.config
+      ? { ...defaultConfig, ...result.config }
+      : defaultConfig;
 
     return NextResponse.json({
       success: true,
-      config: config?.config || null,
+      config,
     });
-  } catch (error) {
+  } catch (err) {
     return NextResponse.json(
-      { success: false, message: (error as Error).message },
-      { status: 500 },
+      { success: false, message: (err as Error).message },
+      { status: 500 }
     );
   }
 }

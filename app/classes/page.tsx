@@ -114,7 +114,7 @@ export default function ClassesPage() {
             </div>
           </div>
         )}
-
+        
         {!loading && hasData && (
           <div className="flex flex-col bg-white rounded-2xl">
             <div className="px-6 pt-6 flex items-center justify-between">

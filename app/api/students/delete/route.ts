@@ -31,16 +31,23 @@ export async function DELETE(req: Request) {
       );
     }
 
-    await studentsCol.deleteOne({ _id: objectId });
+    const deleteClassesResult = await studentClassesCol.deleteMany({
+      studentId: objectId,
+    });
 
-    await studentClassesCol.deleteMany({
-      studentId: student.studentId,
+    const deleteStudentResult = await studentsCol.deleteOne({
+      _id: objectId,
     });
 
     return NextResponse.json({
       success: true,
-      message: "ลบข้อมูลเรียบร้อย",
+      message: "ลบนักศึกษาออกจากระบบสำเร็จ",
+      debug: {
+        deletedClasses: deleteClassesResult.deletedCount,
+        deletedStudent: deleteStudentResult.deletedCount,
+      },
     });
+
   } catch (error: unknown) {
     return NextResponse.json(
       {

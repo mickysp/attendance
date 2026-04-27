@@ -31,7 +31,7 @@ export default function DashboardPage() {
         )}
 
         {!loading && !hasData && (
-          <div className="flex flex-col h-[90vh] bg-white rounded-2xl shadow-sm">
+          <div className="flex flex-col h-[90vh] bg-white rounded-2xl">
             <div className="px-6 pt-6">
               <h1 className="text-[26px] font-semibold text-gray-800">
                 Dashboard

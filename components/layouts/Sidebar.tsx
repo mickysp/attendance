@@ -134,8 +134,8 @@ export default function Sidebar() {
               icon={<ClipboardDocumentCheckIcon />}
               label="ตัวอย่างแบบฟอร์มเช็คชื่อ"
               collapsed={collapsed}
-              active={pathname.startsWith("/checkinform")}
-              onClick={() => router.push("/checkinform")}
+              active={pathname.startsWith("/check-in/configform")}
+              onClick={() => router.push("/check-in/configform")}
             />
           </div>
         </nav>

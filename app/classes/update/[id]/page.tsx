@@ -197,28 +197,33 @@ export default function EditClassPage() {
       return showAlert("ต้องมีอย่างน้อย 1 สาขา", "error");
     }
 
-    showConfirm("คุณต้องการบันทึกข้อมูลใช่หรือไม่?", async () => {
-      try {
-        const res = await fetch(`/api/classes/update?id=${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...item,
-            branches: cleanBranches,
-          }),
-        });
+    showConfirm(
+      "บันทึกแก้ไขข้อมูล?",
+      async () => {
+        try {
+          const res = await fetch(`/api/classes/update?id=${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...item,
+              branches: cleanBranches,
+            }),
+          });
 
-        const data = await res.json();
+          const data = await res.json();
 
-        if (!res.ok) throw new Error(data.message);
+          if (!res.ok) throw new Error(data.message);
 
-        showAlert("อัปเดตสำเร็จ", "success");
-        router.push("/classes");
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
-        showAlert(message, "error");
-      }
-    });
+          showAlert("อัปเดตสำเร็จ", "success");
+          router.push("/classes");
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
+          showAlert(message, "error");
+        }
+      },
+      "edit",
+      "คุณต้องการยืนยันการบันทึกแก้ไขข้อมูลใช่หรือไม่",
+    );
   };
 
   return (
@@ -227,10 +232,10 @@ export default function EditClassPage() {
 
       <div className="flex-1 overflow-y-auto p-6 font-noto relative">
         {loading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-300">
             <div className="flex flex-col items-center gap-4">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-500 border-t-transparent"></div>
-              <p className="text-gray-600 text-sm">กำลังโหลด...</p>
+              <div className="h-14 w-14 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
+              <p className="text-gray-600 text-base text-white">กำลังโหลด...</p>
             </div>
           </div>
         )}
@@ -412,7 +417,7 @@ export default function EditClassPage() {
             <div className="flex justify-end gap-2 mt-6">
               <button
                 onClick={() => router.push("/classes")}
-                className="px-4 py-2 rounded-md border border-gray-300 text-gray-600 text-sm hover:bg-gray-100 cursor-pointer"
+                className="px-6 py-2.5 rounded-md border border-gray-300 text-gray-600 text-sm hover:bg-gray-100 cursor-pointer"
               >
                 ยกเลิก
               </button>
@@ -420,11 +425,11 @@ export default function EditClassPage() {
               <button
                 onClick={handleSubmit}
                 disabled={!isDirty}
-                className={`px-5 py-2.5 rounded-md text-white text-sm transition
+                className={`px-6 py-2.5 rounded-md text-white text-sm transition
                 ${
-                !isDirty
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-[var(--primary)] hover:bg-[var(--primary-hover)] cursor-pointer"
+                  !isDirty
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-[var(--primary)] hover:bg-[var(--primary-hover)] cursor-pointer"
                 }`}
               >
                 บันทึก

@@ -29,6 +29,7 @@ type StudentDoc = {
 type StudentClassDoc = {
   studentId: ObjectId;
   className: string;
+  section: string;
 };
 
 type ResultItem = {
@@ -223,6 +224,7 @@ export async function POST(req: Request) {
       await studentClassesCol.insertOne({
         studentId: sid,
         className,
+        section,
       });
 
       details.push({

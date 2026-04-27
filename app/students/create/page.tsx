@@ -190,10 +190,10 @@ export default function CreateStudentPage() {
 
       <div className="flex-1 overflow-y-auto p-6 font-noto relative">
         {loading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80">
+          <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-300">
             <div className="flex flex-col items-center gap-4">
-              <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-500 border-t-transparent"></div>
-              <p className="text-gray-600 text-sm">กำลังโหลด...</p>
+              <div className="h-14 w-14 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
+              <p className="text-gray-600 text-base text-white">กำลังโหลด...</p>
             </div>
           </div>
         )}
@@ -471,17 +471,17 @@ export default function CreateStudentPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => router.push("/students")}
-                className="px-4 py-2 rounded-md border border-gray-300 text-gray-600 text-sm hover:bg-gray-100 cursor-pointer"
+                className="px-6 py-2.5 rounded-md border border-gray-300 text-gray-600 text-sm hover:bg-gray-100 cursor-pointer"
               >
                 ยกเลิก
               </button>
 
               <button
                 onClick={() =>
-                  showConfirm("คุณต้องการบันทึกข้อมูลใช่หรือไม่", handleSubmit)
+                  showConfirm("เพิ่มข้อมูลนักศึกษา?", handleSubmit)
                 }
                 disabled={loading || !isFormValid}
-                className={`px-5 py-2.5 rounded-md text-white text-sm transition
+                className={`px-6 py-2.5 rounded-md text-white text-sm transition
                 ${
                   loading || !isFormValid
                     ? "bg-gray-400"
