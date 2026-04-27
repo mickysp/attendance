@@ -502,7 +502,7 @@ export default function CreateClassPage() {
 
               <button
                 onClick={() =>
-                  showConfirm("คุณต้องการบันทึกข้อมูลใช่หรือไม่", handleSubmit)
+                  showConfirm("เพิ่มข้อมูลรายวิชา", handleSubmit)
                 }
                 disabled={loading || !isFormValid}
                 className={`px-6 py-2.5 rounded-md text-white text-sm transition

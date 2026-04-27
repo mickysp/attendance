@@ -5,7 +5,6 @@ import {
   ExclamationTriangleIcon,
   DocumentCheckIcon,
   TrashIcon,
-  PencilIcon,
   PencilSquareIcon
 } from "@heroicons/react/24/outline";
 
@@ -87,7 +86,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       case "edit":
         return "คุณต้องการยกเลิกการแก้ไขข้อมูลใช่หรือไม่";
       default:
-        return "กรุณาตรวจสอบข้อมูลก่อนดำเนินการ";
+        return "คุณต้องการบันทึกข้อมูลใช่หรือไม่";
     }
   };
 
@@ -116,20 +115,20 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             <div className="flex justify-center gap-3">
               <button
                 onClick={handleClose}
-                className="px-4 py-2 text-sm rounded-md border border-gray-200 hover:bg-gray-100 cursor-pointer"
+                className="px-6 py-2.5 text-sm rounded-md border border-gray-200 hover:bg-gray-100 cursor-pointer"
               >
                 ยกเลิก
               </button>
 
               <button
                 onClick={handleConfirm}
-                className={`px-4 py-2 text-sm rounded-md text-white cursor-pointer ${
+                className={`px-6 py-2.5 text-sm rounded-md text-white cursor-pointer ${
                   variant === "delete"
                     ? "bg-red-500 hover:bg-red-600"
                     : variant === "warning"
                       ? "bg-blue-500 hover:bg-blue-600"
                       : variant === "edit"
-                        ? "bg-indigo-500 hover:bg-indigo-600"
+                        ? "bg-blue-500 hover:bg-blue-600"
                         : "bg-blue-500 hover:bg-blue-600"
                 }`}
               >

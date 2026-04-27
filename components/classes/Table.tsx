@@ -50,12 +50,10 @@ export default function Table({
   const router = useRouter();
   const { showAlert } = useAlert();
   const { showConfirm } = useConfirm();
-
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [openPageSize, setOpenPageSize] = useState(false);
   const [page, setPage] = useState(1);
   const pageSizeRef = useRef<HTMLDivElement>(null);
-
   const totalPages = Math.ceil(data.length / itemsPerPage);
 
   const paginatedData = data.slice(
@@ -117,23 +115,28 @@ export default function Table({
   };
 
   const handleDelete = (id: string) => {
-    showConfirm("คุณต้องการลบข้อมูลใช่หรือไม่?", async () => {
-      try {
-        const res = await fetch(`/api/classes/delete?id=${id}`, {
-          method: "DELETE",
-        });
+    showConfirm(
+      "ลบข้อมูลรายวิชา?",
+      async () => {
+        try {
+          const res = await fetch(`/api/classes/delete?id=${id}`, {
+            method: "DELETE",
+          });
 
-        const data = await res.json();
+          const data = await res.json();
 
-        if (!res.ok) throw new Error(data.message);
+          if (!res.ok) throw new Error(data.message);
 
-        showAlert(data.message, "success");
-        onDeleteSuccess(id);
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
-        showAlert(message, "error");
-      }
-    });
+          showAlert(data.message, "success");
+          onDeleteSuccess(id);
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
+          showAlert(message, "error");
+        }
+      },
+      "delete",
+      "คุณต้องการลบข้อมูลใช่หรือไม่",
+    );
   };
 
   return (

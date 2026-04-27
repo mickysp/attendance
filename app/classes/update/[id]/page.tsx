@@ -197,28 +197,33 @@ export default function EditClassPage() {
       return showAlert("ต้องมีอย่างน้อย 1 สาขา", "error");
     }
 
-    showConfirm("คุณต้องการบันทึกข้อมูลใช่หรือไม่?", async () => {
-      try {
-        const res = await fetch(`/api/classes/update?id=${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            ...item,
-            branches: cleanBranches,
-          }),
-        });
+    showConfirm(
+      "บันทึกแก้ไขข้อมูล?",
+      async () => {
+        try {
+          const res = await fetch(`/api/classes/update?id=${id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              ...item,
+              branches: cleanBranches,
+            }),
+          });
 
-        const data = await res.json();
+          const data = await res.json();
 
-        if (!res.ok) throw new Error(data.message);
+          if (!res.ok) throw new Error(data.message);
 
-        showAlert("อัปเดตสำเร็จ", "success");
-        router.push("/classes");
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
-        showAlert(message, "error");
-      }
-    });
+          showAlert("อัปเดตสำเร็จ", "success");
+          router.push("/classes");
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
+          showAlert(message, "error");
+        }
+      },
+      "edit",
+      "คุณต้องการยืนยันการบันทึกแก้ไขข้อมูลใช่หรือไม่",
+    );
   };
 
   return (
@@ -422,9 +427,9 @@ export default function EditClassPage() {
                 disabled={!isDirty}
                 className={`px-6 py-2.5 rounded-md text-white text-sm transition
                 ${
-                !isDirty
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-[var(--primary)] hover:bg-[var(--primary-hover)] cursor-pointer"
+                  !isDirty
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-[var(--primary)] hover:bg-[var(--primary-hover)] cursor-pointer"
                 }`}
               >
                 บันทึก

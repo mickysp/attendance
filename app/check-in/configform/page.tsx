@@ -80,12 +80,14 @@ export default function CheckInFormPage() {
 
             <button
               onClick={() => toggleField(key)}
-              className={`w-10 h-5 flex items-center rounded-full px-1 transition cursor-pointer ${config[key] ? "bg-green-500" : "bg-gray-300"
-                }`}
+              className={`w-10 h-5 flex items-center rounded-full px-1 transition cursor-pointer ${
+                config[key] ? "bg-green-500" : "bg-gray-300"
+              }`}
             >
               <div
-                className={`h-3.5 w-3.5 bg-white rounded-full shadow-sm transform transition duration-200 ${config[key] ? "translate-x-5" : "translate-x-0"
-                  }`}
+                className={`h-3.5 w-3.5 bg-white rounded-full shadow-sm transform transition duration-200 ${
+                  config[key] ? "translate-x-5" : "translate-x-0"
+                }`}
               />
             </button>
           </div>
@@ -109,12 +111,14 @@ export default function CheckInFormPage() {
 
             <button
               onClick={() => toggleField(key)}
-              className={`w-10 h-5 flex items-center rounded-full px-1 transition cursor-pointer ${config[key] ? "bg-green-500" : "bg-gray-300"
-                }`}
+              className={`w-10 h-5 flex items-center rounded-full px-1 transition cursor-pointer ${
+                config[key] ? "bg-green-500" : "bg-gray-300"
+              }`}
             >
               <div
-                className={`h-3.5 w-3.5 bg-white rounded-full shadow-sm transform transition duration-200 ${config[key] ? "translate-x-5" : "translate-x-0"
-                  }`}
+                className={`h-3.5 w-3.5 bg-white rounded-full shadow-sm transform transition duration-200 ${
+                  config[key] ? "translate-x-5" : "translate-x-0"
+                }`}
               />
             </button>
           </div>
@@ -150,12 +154,14 @@ export default function CheckInFormPage() {
 
           <button
             onClick={() => toggleField(key)}
-            className={`w-10 h-5 flex items-center rounded-full px-1 transition cursor-pointer ${config[key] ? "bg-green-500" : "bg-gray-300"
-              }`}
+            className={`w-10 h-5 flex items-center rounded-full px-1 transition cursor-pointer ${
+              config[key] ? "bg-green-500" : "bg-gray-300"
+            }`}
           >
             <div
-              className={`h-3.5 w-3.5 bg-white rounded-full shadow-sm transform transition duration-200 ${config[key] ? "translate-x-5" : "translate-x-0"
-                }`}
+              className={`h-3.5 w-3.5 bg-white rounded-full shadow-sm transform transition duration-200 ${
+                config[key] ? "translate-x-5" : "translate-x-0"
+              }`}
             />
           </button>
         </div>
@@ -208,9 +214,10 @@ export default function CheckInFormPage() {
       if (!data.success) throw new Error();
 
       setInitialConfig(config);
-      alert("บันทึกสำเร็จ");
+
+      showAlert("บันทึกข้อมูลสำเร็จ", "success");
     } catch (err) {
-      alert("เกิดข้อผิดพลาด");
+      showAlert("เกิดข้อผิดพลาดในการบันทึก", "error");
     } finally {
       setSaving(false);
     }
@@ -254,13 +261,12 @@ export default function CheckInFormPage() {
             <div className="flex justify-end gap-3 mt-6 text-sm">
               <button
                 className="px-6 py-2.5 rounded-md border border-gray-300 text-gray-600 text-sm hover:bg-gray-100 cursor-pointer"
-
                 onClick={() =>
                   showConfirm(
+                    "ยกเลิกการแก้ไขข้อมูล",
+                    () => setConfig(initialConfig),
+                    "edit",
                     "คุณต้องการยกเลิกการแก้ไขข้อมูลใช่หรือไม่",
-                    () => setConfig({ ...defaultConfig }),
-                    "warning",
-                    "ข้อมูลที่แก้ไขจะไม่ถูกบันทึก",
                   )
                 }
               >
@@ -268,12 +274,20 @@ export default function CheckInFormPage() {
               </button>
 
               <button
-                onClick={handleSaveConfig}
+                onClick={() =>
+                  showConfirm(
+                    "บันทึกแก้ไขข้อมูล",
+                    handleSaveConfig,
+                    "info",
+                    "คุณต้องการยืนยันการบันทึกแก้ไขข้อมูลใช่หรือไม่",
+                  )
+                }
                 disabled={saving || !isDirty}
-                className={`px-6 py-2.5 rounded-lg text-white ${saving || !isDirty
+                className={`px-6 py-2.5 rounded-lg text-white ${
+                  saving || !isDirty
                     ? "bg-gray-300"
                     : "bg-blue-500 hover:bg-blue-600 cursor-pointer"
-                  }`}
+                }`}
               >
                 {saving ? "กำลังบันทึก..." : "บันทึก"}
               </button>
