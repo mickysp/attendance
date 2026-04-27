@@ -259,7 +259,7 @@ export default function StudentTable({
     <div>
       <div className="rounded-xl border border-gray-200 overflow-hidden max-h-[510px] flex flex-col">
         <div className="overflow-x-auto overflow-y-visible">
-          <table className="w-full text-sm table-fixed">
+          <table className="w-full text-base table-fixed">
             <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold w-[160px]">
@@ -281,7 +281,7 @@ export default function StudentTable({
               {paginatedData.map((s, i) => (
                 <tr
                   key={i}
-                  className="border-t border-gray-200 hover:bg-gray-50"
+                  className="border-t border-gray-200 hover:bg-gray-50 text-sm"
                 >
                   <td className="px-4 py-3 truncate">{s.studentId}</td>
 

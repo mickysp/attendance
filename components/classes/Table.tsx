@@ -143,7 +143,7 @@ export default function Table({
     <div>
       <div className="rounded-xl border border-gray-200 overflow-hidden max-h-[510px] flex flex-col">
         <div className="overflow-x-auto overflow-y-visible">
-          <table className="w-full text-sm table-fixed">
+          <table className="w-full text-base table-fixed">
             <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold w-[100px]">
