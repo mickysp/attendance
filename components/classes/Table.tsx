@@ -50,12 +50,10 @@ export default function Table({
   const router = useRouter();
   const { showAlert } = useAlert();
   const { showConfirm } = useConfirm();
-
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [openPageSize, setOpenPageSize] = useState(false);
   const [page, setPage] = useState(1);
   const pageSizeRef = useRef<HTMLDivElement>(null);
-
   const totalPages = Math.ceil(data.length / itemsPerPage);
 
   const paginatedData = data.slice(
@@ -117,29 +115,34 @@ export default function Table({
   };
 
   const handleDelete = (id: string) => {
-    showConfirm("คุณต้องการลบข้อมูลใช่หรือไม่?", async () => {
-      try {
-        const res = await fetch(`/api/classes/delete?id=${id}`, {
-          method: "DELETE",
-        });
+    showConfirm(
+      "ลบข้อมูลรายวิชา?",
+      async () => {
+        try {
+          const res = await fetch(`/api/classes/delete?id=${id}`, {
+            method: "DELETE",
+          });
 
-        const data = await res.json();
+          const data = await res.json();
 
-        if (!res.ok) throw new Error(data.message);
+          if (!res.ok) throw new Error(data.message);
 
-        showAlert(data.message, "success");
-        onDeleteSuccess(id);
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
-        showAlert(message, "error");
-      }
-    });
+          showAlert(data.message, "success");
+          onDeleteSuccess(id);
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
+          showAlert(message, "error");
+        }
+      },
+      "delete",
+      "คุณต้องการลบข้อมูลใช่หรือไม่",
+    );
   };
 
   return (
     <div>
-      <div className="rounded-xl border border-gray-200 overflow-hidden">
-        <div className="h-[510px] overflow-auto">
+      <div className="rounded-xl border border-gray-200 overflow-hidden max-h-[510px] flex flex-col">
+        <div className="overflow-x-auto overflow-y-visible">
           <table className="w-full text-sm table-fixed">
             <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10">
               <tr>

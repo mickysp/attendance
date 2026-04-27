@@ -49,6 +49,8 @@ export default function StudentTable({
   const [openEdit, setOpenEdit] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+
   const [editingClasses, setEditingClasses] = useState<
     { className: string; section: string }[]
   >([]);
@@ -57,9 +59,6 @@ export default function StudentTable({
     className: c.className,
     section: c.section || "",
   }));
-
-  const isClassDirty =
-    JSON.stringify(editingClasses) !== JSON.stringify(originalClasses);
 
   const paginatedData = data.slice(
     (page - 1) * itemsPerPage,
@@ -94,7 +93,10 @@ export default function StudentTable({
     isValidName(selectedStudent.fullName.trim()) &&
     isValidSection(selectedStudent.section || "") &&
     (!selectedStudent.email || isValidEmail(selectedStudent.email.trim())) &&
-    editingClasses.every((c) => c.section.trim().length > 0);
+    editingClasses.length > 0 &&
+    editingClasses.every(
+      (c) => c.className.trim().length > 0 && c.section.trim().length > 0,
+    );
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -113,15 +115,14 @@ export default function StudentTable({
   const getVisiblePages = () => {
     const pages = [];
 
+    const maxVisible = 4;
+
     let start = Math.max(1, page - 1);
-    let end = Math.min(totalPages, page + 1);
+    let end = start + maxVisible - 1;
 
-    if (page === 1) {
-      end = Math.min(3, totalPages);
-    }
-
-    if (page === totalPages) {
-      start = Math.max(1, totalPages - 2);
+    if (end > totalPages) {
+      end = totalPages;
+      start = Math.max(1, end - maxVisible + 1);
     }
 
     for (let i = start; i <= end; i++) {
@@ -132,27 +133,32 @@ export default function StudentTable({
   };
 
   const handleDelete = (id: string) => {
-    showConfirm("คุณต้องการลบข้อมูลใช่หรือไม่?", async () => {
-      try {
-        const res = await fetch(`/api/students/delete?id=${id}`, {
-          method: "DELETE",
-        });
+    showConfirm(
+      "ลบข้อมูล?",
+      async () => {
+        try {
+          const res = await fetch(`/api/students/delete?id=${id}`, {
+            method: "DELETE",
+          });
 
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(text);
+          if (!res.ok) {
+            const text = await res.text();
+            throw new Error(text);
+          }
+
+          const data = await res.json();
+
+          showAlert(data.message || "ลบข้อมูลสำเร็จ", "success");
+
+          onDeleteSuccess(id);
+        } catch (err: unknown) {
+          const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
+          showAlert(message, "error");
         }
-
-        const data = await res.json();
-
-        showAlert(data.message || "ลบข้อมูลสำเร็จ", "success");
-
-        onDeleteSuccess(id);
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : "เกิดข้อผิดพลาด";
-        showAlert(message, "error");
-      }
-    });
+      },
+      "delete",
+      "คุณต้องการลบข้อมูลใช่หรือไม่",
+    );
   };
 
   const handleUpdateStudent = async () => {
@@ -163,11 +169,13 @@ export default function StudentTable({
 
       const payload: Student = {
         ...selectedStudent,
-        classes: editingClasses.map((c, i) => ({
-          className: c.className,
-          section: c.section,
-          academicYear: selectedStudent.classes?.[i]?.academicYear || 0,
-        })),
+        classes: editingClasses
+          .filter((c) => c.className.trim() !== "")
+          .map((c, i) => ({
+            className: c.className,
+            section: c.section,
+            academicYear: selectedStudent.classes?.[i]?.academicYear || 0,
+          })),
       };
 
       const res = await fetch("/api/students/update", {
@@ -195,6 +203,45 @@ export default function StudentTable({
     }
   };
 
+  const handleWithdraw = (student: Student) => {
+    if (!student.classes || student.classes.length === 0) {
+      showAlert("ไม่มีวิชาให้ถอน", "error");
+      return;
+    }
+
+    const className = student.classes[0].className;
+
+    showConfirm(
+      "ถอนวิชา?",
+      async () => {
+        try {
+          const res = await fetch(
+            `/api/students/withdraw-course?studentId=${student._id}&className=${className}`,
+            { method: "DELETE" },
+          );
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            showAlert(data.message, "error");
+            return;
+          }
+
+          showAlert("ถอนวิชาสำเร็จ", "success");
+
+          onUpdateSuccess({
+            ...student,
+            classes: student.classes?.filter((c) => c.className !== className),
+          });
+        } catch {
+          showAlert("เกิดข้อผิดพลาด", "error");
+        }
+      },
+      "withdraw",
+      "คุณต้องการถอนวิชานี้ใช่หรือไม่",
+    );
+  };
+
   if (data.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-[60vh] text-center">
@@ -210,8 +257,8 @@ export default function StudentTable({
 
   return (
     <div>
-      <div className="rounded-xl border border-gray-200 overflow-hidden">
-        <div className="h-[510px] overflow-auto">
+      <div className="rounded-xl border border-gray-200 overflow-hidden max-h-[510px] flex flex-col">
+        <div className="overflow-x-auto overflow-y-visible">
           <table className="w-full text-sm table-fixed">
             <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10">
               <tr>
@@ -224,7 +271,7 @@ export default function StudentTable({
                 <th className="px-4 py-3 text-left font-semibold w-[260px]">
                   อีเมล
                 </th>
-                <th className="px-4 py-3 text-left font-semibold w-[280px]">
+                <th className="px-4 py-3 text-left font-semibold w-[350px]">
                   จัดการ
                 </th>
               </tr>
@@ -275,10 +322,22 @@ export default function StudentTable({
                       </button>
 
                       <button
-                        onClick={() => handleDelete(s._id)}
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-red-200 text-red-500 hover:bg-red-50 text-sm cursor-pointer"
+                        onClick={() => {
+                          setOpenMenuId(null);
+                          handleWithdraw(s);
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-gray-200 hover:bg-yellow-50 text-yellow-500 text-sm cursor-pointer"
                       >
-                        <TrashIcon className="w-4 h-4" />
+                        ถอนวิชา
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          setOpenMenuId(null);
+                          handleDelete(s._id);
+                        }}
+                        className="flex items-center gap-1 px-3 py-1.5 rounded-md border border-gray-200 hover:bg-red-50 text-red-500 text-sm cursor-pointer"
+                      >
                         ลบ
                       </button>
                     </div>
@@ -592,7 +651,9 @@ export default function StudentTable({
             <button
               onClick={() => setPage((p) => Math.max(p - 1, 1))}
               disabled={page === 1}
-              className="px-3 py-2 text-[13px] rounded-md border border-gray-200 hover:bg-gray-100 disabled:opacity-40 cursor-pointer"
+              className={`px-3 py-2 text-[13px] rounded-md border border-gray-100 hover:bg-gray-100 
+              ${page === 1 ? "opacity-40" : "cursor-pointer"}
+              `}
             >
               ก่อนหน้า
             </button>
@@ -604,7 +665,7 @@ export default function StudentTable({
                 className={`px-3.5 py-2 rounded-md border text-[13px] cursor-pointer ${
                   page === p
                     ? "bg-[var(--primary)] text-white border-[var(--primary)]"
-                    : "border-gray-200 hover:bg-gray-100"
+                    : "border-gray-100 hover:bg-gray-100"
                 }`}
               >
                 {p}
@@ -613,7 +674,9 @@ export default function StudentTable({
             <button
               onClick={() => setPage((p) => Math.min(p + 1, totalPages))}
               disabled={page === totalPages}
-              className="px-4 py-2 text-[13px] rounded-md border border-gray-200 hover:bg-gray-100 disabled:opacity-40 cursor-pointer"
+              className={`px-4 py-2 text-[13px] rounded-md border border-gray-100 hover:bg-gray-100 
+              ${page === totalPages ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}
+              `}
             >
               ถัดไป
             </button>

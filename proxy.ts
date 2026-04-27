@@ -35,15 +35,20 @@ export async function proxy(req: NextRequest) {
       return NextResponse.redirect(new URL("/", req.url));
     }
 
-    if (url.startsWith("/dashboard") && role !== "Teacher") {
+    if (url.startsWith("/dashboard") && role === "Teaching Assistant") {
       return NextResponse.redirect(new URL("/attendance", req.url));
     }
 
-    if (url.startsWith("/attendance") && role !== "Teaching Assistant") {
+    if (
+      url.startsWith("/attendance") &&
+      role !== "Teacher" &&
+      role !== "Teaching Assistant"
+    ) {
       return NextResponse.redirect(new URL("/dashboard", req.url));
     }
 
     return NextResponse.next();
+
   } catch {
     return NextResponse.redirect(new URL("/login", req.url));
   }

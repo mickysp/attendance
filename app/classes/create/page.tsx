@@ -238,7 +238,7 @@ export default function CreateClassPage() {
       <Sidebar />
 
       <div className="flex-1 overflow-y-auto p-6 font-noto">
-        <div className="bg-white rounded-2xl shadow-sm pt-6 px-6 pb-6">
+        <div className="bg-white rounded-2xl pt-6 px-6 pb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <button
@@ -495,17 +495,17 @@ export default function CreateClassPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => router.push("/classes")}
-                className="px-4 py-2 rounded-md border border-gray-300 text-gray-600 text-sm hover:bg-gray-100 cursor-pointer"
+                className="px-6 py-2.5 rounded-md border border-gray-300 text-gray-600 text-sm hover:bg-gray-100 cursor-pointer"
               >
                 ยกเลิก
               </button>
 
               <button
                 onClick={() =>
-                  showConfirm("คุณต้องการบันทึกข้อมูลใช่หรือไม่", handleSubmit)
+                  showConfirm("เพิ่มข้อมูลรายวิชา", handleSubmit)
                 }
                 disabled={loading || !isFormValid}
-                className={`px-5 py-2.5 rounded-md text-white text-sm transition
+                className={`px-6 py-2.5 rounded-md text-white text-sm transition
                 ${
                   loading || !isFormValid
                     ? "bg-gray-400"

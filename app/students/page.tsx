@@ -226,7 +226,10 @@ export default function StudentsPage() {
         )}
 
         {!loading && (
-          <div className="flex flex-col bg-white rounded-2xl">
+          <div
+            className={`flex flex-col bg-white rounded-2xl 
+            ${!hasInitialData ? "min-h-[90vh]" : ""}`}
+          >
             <div className="px-6 pt-6 flex items-start justify-between">
               <div>
                 <h1 className="text-[26px] font-semibold text-gray-800">

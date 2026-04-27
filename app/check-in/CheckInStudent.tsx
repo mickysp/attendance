@@ -42,7 +42,7 @@ const DEFAULT_CONFIG: FormConfig = {
   location: false,
 };
 
-export default function CheckInPage() {
+export default function CheckInStudentPage() {
   const searchParams = useSearchParams();
   const classId = searchParams.get("classId");
 
