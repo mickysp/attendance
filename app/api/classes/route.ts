@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
+import { ObjectId } from "mongodb";
 
 type ClassDoc = {
-  _id: string;
+  _id: ObjectId;
   name?: string;
   className?: string;
   title?: string;
@@ -15,6 +16,17 @@ type ScheduleDoc = {
   allowCheckIn?: boolean;
 };
 
+type StudentClassDoc = {
+  studentId: ObjectId;
+  className: string;
+  section?: string;
+};
+
+type SafeClassDoc = Omit<ClassDoc, "_id"> & {
+  _id: string;
+  hasStudents?: boolean;
+};
+
 export async function GET() {
   try {
     const client = await clientPromise;
@@ -23,17 +35,25 @@ export async function GET() {
     const classesCol = db.collection<ClassDoc>("classes");
     const scheduleCol = db.collection<ScheduleDoc>("schedule");
 
+    const studentClassesCol =
+      db.collection<StudentClassDoc>("student_classes");
+
     const data = await classesCol
       .find({})
       .sort({ createdAt: -1 })
       .toArray();
 
-    const totalClasses = data.length;
+    const safeData: SafeClassDoc[] = data.map((c) => ({
+      ...c,
+      _id: c._id.toString(),
+    }));
+
+    const totalClasses = safeData.length;
 
     let openClasses = 0;
     let closedClasses = 0;
 
-    data.forEach((c) => {
+    safeData.forEach((c) => {
       if (c.isOpen) openClasses++;
       else closedClasses++;
     });
@@ -48,6 +68,18 @@ export async function GET() {
       else notAllowCheckIn++;
     });
 
+    const classNamesWithStudents =
+      await studentClassesCol.distinct("className");
+
+    const enrichedData: SafeClassDoc[] = safeData.map((c) => {
+      const name = c.className || c.name || "";
+
+      return {
+        ...c,
+        hasStudents: classNamesWithStudents.includes(name),
+      };
+    });
+
     return NextResponse.json(
       {
         success: true,
@@ -58,11 +90,10 @@ export async function GET() {
           allowCheckIn,
           notAllowCheckIn,
         },
-        data,
+        data: enrichedData,
       },
       { status: 200 }
     );
-
   } catch (error) {
     return NextResponse.json(
       {

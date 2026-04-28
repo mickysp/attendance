@@ -66,7 +66,7 @@ export async function GET(req: Request) {
       : getCurrentAcademicYear();
 
     query.academicYear = academicYear;
-
+    
     const students = await studentsCol
       .find(query)
       .sort({ createdAt: -1 })
@@ -77,6 +77,7 @@ export async function GET(req: Request) {
     const relations = await studentClassesCol
       .find({
         studentId: { $in: studentIds },
+        ...(classFilter && { className: classFilter }),
       })
       .toArray();
 
@@ -109,7 +110,6 @@ export async function GET(req: Request) {
           section: c.section,
           academicYear: s.academicYear,
         })),
-
         section: s.section,
         major: s.major || "",
         academicYear: s.academicYear || null,
@@ -125,6 +125,27 @@ export async function GET(req: Request) {
       );
     }
 
+    let majorsByClass: string[] = [];
+
+    if (classFilter) {
+      const studentIdSet = new Set(
+        relations.map((r) => r.studentId.toString())
+      );
+
+      const majorSet = new Set<string>();
+
+      students.forEach((s) => {
+        if (
+          studentIdSet.has(s._id.toString()) &&
+          s.major
+        ) {
+          majorSet.add(s.major.trim());
+        }
+      });
+
+      majorsByClass = Array.from(majorSet);
+    }
+
     const yearsRaw = await studentsCol.distinct("academicYear");
 
     const years = (yearsRaw as number[])
@@ -136,6 +157,7 @@ export async function GET(req: Request) {
         success: true,
         count: data.length,
         students: data,
+        majorsByClass,
         years,
         currentYear: getCurrentAcademicYear(),
       },
