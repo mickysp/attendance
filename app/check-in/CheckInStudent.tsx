@@ -296,15 +296,18 @@ export default function CheckInStudentPage() {
 
   if (showSuccess) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 font-noto">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center max-w-md w-full">
-          <CheckCircleIcon className="w-14 h-14 text-green-500 mx-auto mb-3" />
+      <div className="min-h-screen flex items-center justify-center bg-blue-50 px-6 font-noto">
+        <div
+          className="bg-white rounded-3xl shadow-sm border border-gray-200 
+                  px-8 py-15 text-center max-w-xl w-full"
+        >
+          <CheckCircleIcon className="w-20 h-20 text-green-500 mx-auto mb-5" />
 
-          <h2 className="text-lg font-semibold text-gray-900 mb-1">
+          <h2 className="text-2xl font-semibold text-gray-900 mb-2">
             เช็คชื่อสำเร็จ
           </h2>
 
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-gray-500 leading-relaxed">
             คุณได้ทำการเช็คชื่อเรียบร้อยแล้ว
           </p>
         </div>
@@ -315,10 +318,10 @@ export default function CheckInStudentPage() {
   return (
     <div className="min-h-screen bg-blue-50 px-4 py-10 font-noto">
       {submitting && (
-        <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-300">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-gray-300">
           <div className="flex flex-col items-center gap-4">
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-500 border-t-transparent"></div>
-            <p className="text-gray-600 text-sm font-noto">กำลังโหลด...</p>
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
+            <p className="text-white text-sm font-noto">กำลังบันทึก...</p>
           </div>
         </div>
       )}
