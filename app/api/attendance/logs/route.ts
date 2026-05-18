@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
 
-type ThaiStatus = "มาเรียน" | "มาสาย" | "ลา";
+type ThaiStatus = "มาเรียน" | "มาสาย" | "ลา" | "ขาด";
 
 type CheckInLog = {
   time: Date;
@@ -47,17 +47,15 @@ export async function GET(req: Request) {
     const nowTH = new Date(
       new Date().toLocaleString("en-US", {
         timeZone: "Asia/Bangkok",
-      })
+      }),
     );
 
     const date =
-      searchParams.get("date") ||
-      nowTH.toISOString().split("T")[0];
+      searchParams.get("date") || nowTH.toISOString().split("T")[0];
 
-    const academicYear =
-      searchParams.get("year")
-        ? Number(searchParams.get("year"))
-        : new Date().getFullYear() + 543;
+    const academicYear = searchParams.get("year")
+      ? Number(searchParams.get("year"))
+      : new Date().getFullYear() + 543;
 
     const record = await attendanceCol.findOne({
       classId: new ObjectId(classId),
@@ -74,7 +72,7 @@ export async function GET(req: Request) {
     }
 
     const logs = [...(record.logs ?? [])].sort(
-      (a, b) => a.time.getTime() - b.time.getTime()
+      (a, b) => a.time.getTime() - b.time.getTime(),
     );
 
     return NextResponse.json({
@@ -87,7 +85,6 @@ export async function GET(req: Request) {
       totalLogs: logs.length,
       logs,
     });
-
   } catch (error) {
     return NextResponse.json({
       success: false,

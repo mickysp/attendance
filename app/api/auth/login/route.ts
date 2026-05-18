@@ -12,14 +12,14 @@ export async function POST(req: Request) {
     if (!username?.trim()) {
       return NextResponse.json(
         { success: false, message: "กรุณากรอกชื่อผู้ใช้" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (!password?.trim()) {
       return NextResponse.json(
         { success: false, message: "กรุณากรอกรหัสผ่าน" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     if (!user) {
       return NextResponse.json(
         { success: false, message: "ไม่พบผู้ใช้งาน" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     if (!isMatch) {
       return NextResponse.json(
         { success: false, message: "รหัสผ่านไม่ถูกต้อง" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
       JWT_SECRET,
       {
         expiresIn: remember ? "7d" : "1d",
-      }
+      },
     );
 
     const response = NextResponse.json({
@@ -67,6 +67,9 @@ export async function POST(req: Request) {
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: remember ? 60 * 60 * 24 * 7 : 60 * 60 * 24,
+      expires: new Date(
+        Date.now() + (remember ? 7 * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000),
+      ),
       path: "/",
     });
 
@@ -79,7 +82,7 @@ export async function POST(req: Request) {
         success: false,
         message: (error as Error).message,
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

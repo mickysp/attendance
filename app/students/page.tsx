@@ -5,7 +5,6 @@ import Sidebar from "@/components/layouts/Sidebar";
 import {
   DocumentArrowUpIcon,
   ChevronDownIcon,
-  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import StudentFilter from "@/components/students/Select";
 import { useRouter } from "next/navigation";
