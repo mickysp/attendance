@@ -26,6 +26,8 @@ type Major = {
 type StudentAttendance = {
   studentId: string;
   name: string;
+  email: string;
+  attendanceDate?: string | null;
   section: string;
   major: string;
   status: "มาเรียน" | "มาสาย" | "ลา" | "ขาด";
@@ -33,6 +35,7 @@ type StudentAttendance = {
   checkInTime: string | null;
   totalScore: number;
   days: number;
+  absentDays: number;
   lateDays: number;
   averageScore: number;
 };
@@ -60,6 +63,15 @@ export default function AttendancePage() {
     setStudents([]);
     setMajors([]);
   };
+
+  type AttendanceStatus = "มาเรียน" | "มาสาย" | "ลา" | "ขาด" | null;
+
+  const [selectedStatus, setSelectedStatus] = useState<AttendanceStatus>(null);
+
+  const filteredStudents =
+    selectedStatus === null
+      ? students
+      : students.filter((s) => s.status === selectedStatus);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -244,7 +256,15 @@ export default function AttendancePage() {
 
             {selectedClass && selectedMajor && students.length > 0 && (
               <div className="px-6 pt-4">
-                <StudentSummaryCard students={students} />
+                <StudentSummaryCard
+                  students={students}
+                  selectedStatus={selectedStatus}
+                  onSelectStatus={(status) => {
+                    setSelectedStatus((prev) =>
+                      prev === status ? null : status,
+                    );
+                  }}
+                />
               </div>
             )}
             <div className="px-6 mt-4 flex items-start gap-4">
@@ -348,7 +368,12 @@ export default function AttendancePage() {
                     Student ทั้งหมด {students.length} รายการ
                   </div>
 
-                  <AttendanceTable data={students} classId={selectedClass} />
+                  <AttendanceTable
+                    classId={selectedClass}
+                    data={filteredStudents.filter((s) =>
+                      selectedMajor ? s.major === selectedMajor : true,
+                    )}
+                  />
                 </>
               )}
             </div>

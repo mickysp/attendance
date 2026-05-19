@@ -12,6 +12,7 @@ import {
 type StudentAttendance = {
   studentId: string;
   name: string;
+  email: string;
   attendanceDate?: string | null;
   section: string;
   major: string;
@@ -20,11 +21,13 @@ type StudentAttendance = {
   checkInTime: string | null;
   totalScore: number;
   days: number;
+  absentDays: number;
   lateDays: number;
   averageScore: number;
 };
 
 type AttendanceLog = {
+  date?: string;
   timeText: string;
   status?: string;
   score?: number;
@@ -65,6 +68,16 @@ export default function AttendanceTable({ data, classId }: Props) {
     return new Date(date).toLocaleDateString("th-TH", {
       day: "numeric",
       month: "short",
+      year: "numeric",
+    });
+  };
+
+  const formatLogDate = (date?: string) => {
+    if (!date) return "-";
+
+    return new Date(date).toLocaleDateString("th-TH", {
+      day: "numeric",
+      month: "long",
       year: "numeric",
     });
   };
@@ -198,15 +211,9 @@ export default function AttendanceTable({ data, classId }: Props) {
                     <td className="px-4 py-3.5 text-sm text-center">
                       <div className="flex items-center justify-center">
                         {s.attendanceDate ? (
-                          <div className="inline-flex flex-col items-center rounded-2xl border border-gray-100 bg-gray-50 px-3 py-2 min-w-[120px]">
-                            <span className="text-[11px] font-medium uppercase tracking-wide text-gray-400">
-                              Attendance
-                            </span>
-
-                            <span className="mt-0.5 text-sm font-semibold text-gray-700">
-                              {formatThaiDate(s.attendanceDate)}
-                            </span>
-                          </div>
+                          <span className="mt-0.5 text-sm font-medium text-gray-700">
+                            {formatThaiDate(s.attendanceDate)}
+                          </span>
                         ) : (
                           <div className="inline-flex items-center rounded-xl border border-dashed border-gray-200 px-3 py-2">
                             <span className="text-xs text-gray-400">
@@ -216,27 +223,18 @@ export default function AttendanceTable({ data, classId }: Props) {
                         )}
                       </div>
                     </td>
+
                     <td className="px-4 py-3.5 text-sm text-center">
-                      {s.days}
+                      {s.absentDays}
                     </td>
 
                     <td className="px-4 py-3.5 text-sm text-center">
                       <div className="flex items-center justify-center">
                         {s.lateDays > 0 ? (
-                          <div className="inline-flex items-center gap-2 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 px-3 py-1.5 shadow-sm">
-                            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-amber-100">
-                              <ClockIcon className="w-3.5 h-3.5 text-amber-600" />
-                            </div>
-
-                            <div className="flex items-baseline gap-1">
-                              <span className="text-sm font-bold text-amber-700">
-                                {s.lateDays}
-                              </span>
-
-                              <span className="text-[11px] font-medium text-amber-600">
-                                ครั้ง
-                              </span>
-                            </div>
+                          <div className="flex items-baseline gap-1">
+                            <span className="text-sm font-medium">
+                              {s.lateDays} ครั้ง
+                            </span>
                           </div>
                         ) : (
                           <div className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1">
@@ -267,7 +265,8 @@ export default function AttendanceTable({ data, classId }: Props) {
                           return (
                             <div
                               className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 border bg-white ${currentStatus.textColor}
-                              ${status === "มาเรียน"
+                              ${
+                                status === "มาเรียน"
                                   ? "border-emerald-100"
                                   : status === "มาสาย"
                                     ? "border-amber-100"
@@ -276,7 +275,7 @@ export default function AttendanceTable({ data, classId }: Props) {
                                       : status === "ขาด"
                                         ? "border-red-100"
                                         : "border-gray-200"
-                                }
+                              }
                               `}
                             >
                               <div
@@ -298,6 +297,8 @@ export default function AttendanceTable({ data, classId }: Props) {
                           try {
                             setLoadingLogs(true);
 
+                            setLogs([]);
+
                             if (!classId) {
                               alert("ไม่พบ classId");
                               return;
@@ -307,7 +308,16 @@ export default function AttendanceTable({ data, classId }: Props) {
                               `/api/attendance/logs?classId=${classId}&studentId=${s.studentId}`,
                             );
 
-                            const json = await res.json();
+                            const text = await res.text();
+
+                            console.log(text);
+
+                            const json = text
+                              ? JSON.parse(text)
+                              : {
+                                  success: false,
+                                  logs: [],
+                                };
 
                             if (json.success) {
                               setLogs(json.logs || []);
@@ -316,9 +326,11 @@ export default function AttendanceTable({ data, classId }: Props) {
                             }
 
                             setSelectedStudent(s);
+
                             setOpenModal(true);
                           } catch (error) {
                             console.error(error);
+
                             setLogs([]);
                           } finally {
                             setLoadingLogs(false);
@@ -388,10 +400,11 @@ export default function AttendanceTable({ data, classId }: Props) {
                 <button
                   key={p}
                   onClick={() => setPage(p)}
-                  className={`px-3.5 py-2 rounded-md border text-[13px] ${page === p
+                  className={`px-3.5 py-2 rounded-md border text-[13px] ${
+                    page === p
                       ? "bg-[var(--primary)] text-white border-[var(--primary)]"
                       : "border-gray-200 hover:bg-gray-100"
-                    }`}
+                  }`}
                 >
                   {p}
                 </button>
@@ -448,6 +461,14 @@ export default function AttendanceTable({ data, classId }: Props) {
 
                   <p className="font-medium text-gray-800">
                     {selectedStudent.name}
+                  </p>
+                </div>
+
+                <div>
+                  <p className="text-gray-500">อีเมล</p>
+
+                  <p className="font-medium text-gray-800">
+                  {selectedStudent.email || "-"}
                   </p>
                 </div>
 
@@ -518,68 +539,107 @@ export default function AttendanceTable({ data, classId }: Props) {
 
                   {!loadingLogs &&
                     logs.length > 0 &&
-                    logs.map((log, index) => (
-                      <div
-                        key={index}
-                        className="group border border-gray-200 rounded-2xl p-4 hover:bg-gray-50 transition"
-                      >
-                        <div className="flex items-start justify-between gap-4">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 text-sm text-gray-500">
-                              <ClockIcon className="w-4 h-4" />
+                    logs.map((log, index) => {
+                      const statusStyle =
+                        log.status === "มาเรียน"
+                          ? {
+                              badge:
+                                "bg-emerald-50 text-emerald-700 border-emerald-100",
+                              score: "text-emerald-600",
+                            }
+                          : log.status === "มาสาย"
+                            ? {
+                                badge:
+                                  "bg-amber-50 text-amber-700 border-amber-100",
+                                score: "text-amber-600",
+                              }
+                            : log.status === "ลา"
+                              ? {
+                                  badge:
+                                    "bg-sky-50 text-sky-700 border-sky-100",
+                                  score: "text-sky-600",
+                                }
+                              : {
+                                  badge:
+                                    "bg-red-50 text-red-700 border-red-100",
+                                  score: "text-red-600",
+                                };
 
-                              <span>{log.timeText}</span>
-                            </div>
+                      return (
+                        <div
+                          key={index}
+                          className="rounded-2xl border border-gray-200 bg-white p-5 transition"
+                        >
+                          <div className="flex items-stretch gap-5">
+                            <div className="flex flex-1 flex-col justify-between min-h-[96px]">
+                              <div>
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <div
+                                    className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium ${statusStyle.badge}`}
+                                  >
+                                    {log.status}
+                                  </div>
 
-                            <div className="flex items-center gap-2 mt-3">
-                              <span
-                                className={`px-2.5 py-1 rounded-full text-xs border ${log.status === "มาเรียน"
-                                    ? "bg-green-50 text-green-600 border-green-100"
-                                    : log.status === "มาสาย"
-                                      ? "bg-yellow-50 text-yellow-600 border-yellow-100"
-                                      : "bg-red-50 text-red-600 border-red-100"
-                                  }`}
-                              >
-                                {log.status}
-                              </span>
+                                  {typeof log.score === "number" && (
+                                    <span
+                                      className={`text-sm font-semibold ${statusStyle.score}`}
+                                    >
+                                      +{log.score} คะแนน
+                                    </span>
+                                  )}
+                                </div>
 
-                              {typeof log.score === "number" && (
-                                <span className="text-sm font-medium text-gray-700">
-                                  +{log.score} คะแนน
-                                </span>
+                                <div className="mt-4 flex items-start gap-3">
+                                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gray-100">
+                                    <ClockIcon className="h-5 w-5 text-gray-500" />
+                                  </div>
+
+                                  <div>
+                                    <p className="text-base font-semibold text-gray-800">
+                                      {log.timeText}
+                                    </p>
+
+                                    <p className="mt-0.5 text-sm text-gray-400">
+                                      {formatLogDate(log.date)}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {log.location && (
+                                <a
+                                  href={`https://maps.google.com/?q=${log.location.lat},${log.location.lng}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-4 inline-flex w-fit items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-xs font-medium text-gray-600 transition hover:bg-gray-100"
+                                >
+                                  <MapPinIcon className="h-4 w-4 text-gray-500" />
+                                  ดูตำแหน่งที่เช็คชื่อ
+                                </a>
                               )}
                             </div>
 
-                            {log.location && (
-                              <a
-                                href={`https://maps.google.com/?q=${log.location.lat},${log.location.lng}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-4 inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-200 transition"
-                              >
-                                <MapPinIcon className="w-4 h-4" />
-                                เปิดตำแหน่งที่เช็คชื่อ
-                              </a>
-                            )}
+                            <div className="w-24 shrink-0">
+                              {log.photo ? (
+                                <img
+                                  src={log.photo}
+                                  alt="attendance"
+                                  className="h-full min-h-[96px] w-24 rounded-2xl border border-gray-200 object-cover"
+                                />
+                              ) : (
+                                <div className="flex h-full min-h-[96px] w-24 flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 bg-gray-50">
+                                  <PhotoIcon className="h-6 w-6 text-gray-300" />
 
-                            {!log.photo && (
-                              <div className="mt-4 flex items-center gap-2 text-xs text-gray-400">
-                                <PhotoIcon className="w-4 h-4" />
-                                ไม่มีรูปภาพ
-                              </div>
-                            )}
+                                  <span className="mt-1 text-[11px] text-gray-400">
+                                    ไม่มีรูป
+                                  </span>
+                                </div>
+                              )}
+                            </div>
                           </div>
-
-                          {log.photo && (
-                            <img
-                              src={log.photo}
-                              alt="attendance"
-                              className="h-24 w-24 rounded-2xl border border-gray-200 object-cover"
-                            />
-                          )}
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                 </div>
               </div>
             </div>
