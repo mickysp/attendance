@@ -240,7 +240,7 @@ export default function AttendanceTable({ data, classId }: Props) {
                     </td>
 
                     <td className="px-4 py-3.5 text-sm text-center">
-                      {s.absentDays}
+                      {s.absentDays} ครั้ง
                     </td>
 
                     <td className="px-4 py-3.5 text-sm text-center">

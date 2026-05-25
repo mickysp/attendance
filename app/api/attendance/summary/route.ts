@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { ObjectId, Document } from "mongodb";
+import {
+  ObjectId,
+  Document,
+} from "mongodb";
 
 type ThaiStatus =
   | "มาเรียน"
@@ -26,15 +29,102 @@ type AttendanceSummary = {
   averageScore: number;
 };
 
-const getAcademicYear = () =>
-  new Date().getFullYear() + 543;
+type SessionDoc = {
+  _id?: ObjectId;
+  classId: ObjectId | string;
+  academicYear: number;
+  date: string;
+  startTime?: string;
+  endTime?: string;
+  lateAfter?: number;
+  allowCheckIn?: boolean;
+  isOpen?: boolean;
+  className?: string;
+  createdAt?: Date;
+  updatedAt?: Date;
+};
 
-export async function GET(req: Request) {
+type AttendanceDoc = {
+  _id?: ObjectId;
+  sessionId?: ObjectId | string;
+  classId: ObjectId | string;
+  studentId: string;
+  status: ThaiStatus;
+  score?: number;
+  academicYear: number;
+  date: string;
+  checkInHour?: string;
+  checkInTime?: Date;
+  createdAt?: Date;
+};
+
+type AttendanceAggregate = {
+  _id: string;
+  totalScore: number;
+  days: number;
+  lateDays: number;
+  lastStatus?: ThaiStatus;
+  lastAttendanceDate?: string;
+  lastCheckInTime?: Date;
+  lastCheckInHour?: string;
+};
+
+const getNowTH = () =>
+  new Date(
+    new Date().toLocaleString(
+      "en-US",
+      {
+        timeZone:
+          "Asia/Bangkok",
+      },
+    ),
+  );
+
+const getAcademicYear = () =>
+  getNowTH().getFullYear() +
+  543;
+
+function createSessionDateTime(
+  date: string,
+  time: string,
+) {
+  return new Date(
+    `${date}T${time}:00+07:00`,
+  );
+}
+
+function isSessionEnded(
+  session: SessionDoc,
+) {
+  if (
+    !session.date ||
+    !session.endTime
+  ) {
+    return false;
+  }
+
+  const now = getNowTH();
+
+  const end =
+    createSessionDateTime(
+      session.date,
+      session.endTime,
+    );
+
+  return now > end;
+}
+
+export async function GET(
+  req: Request,
+) {
   try {
-    const { searchParams } = new URL(req.url);
+    const { searchParams } =
+      new URL(req.url);
 
     const classId =
-      searchParams.get("classId");
+      searchParams.get(
+        "classId",
+      );
 
     const yearParam =
       searchParams.get("year");
@@ -42,14 +132,16 @@ export async function GET(req: Request) {
     if (!classId) {
       return NextResponse.json({
         success: false,
-        message: "missing classId",
+        message:
+          "missing classId",
         data: [],
         majorsByClass: [],
       });
     }
 
     const academicYear =
-      yearParam && yearParam !== ""
+      yearParam &&
+      yearParam !== ""
         ? Number(yearParam)
         : getAcademicYear();
 
@@ -60,7 +152,7 @@ export async function GET(req: Request) {
       client.db("attendance");
 
     const attendanceCol =
-      db.collection<Document>(
+      db.collection<AttendanceDoc>(
         "attendance",
       );
 
@@ -75,7 +167,7 @@ export async function GET(req: Request) {
       );
 
     const sessionsCol =
-      db.collection<Document>(
+      db.collection<SessionDoc>(
         "sessions",
       );
 
@@ -102,7 +194,9 @@ export async function GET(req: Request) {
 
     const studentObjectIds =
       studentClasses
-        .map((s) => s.studentId)
+        .map(
+          (s) => s.studentId,
+        )
         .filter(Boolean);
 
     const students =
@@ -123,7 +217,10 @@ export async function GET(req: Request) {
 
           academicYear,
         })
-        .sort({ date: 1 })
+        .sort({
+          date: 1,
+          startTime: 1,
+        })
         .toArray();
 
     const totalSessions =
@@ -135,96 +232,108 @@ export async function GET(req: Request) {
       ];
 
     const latestDate =
-      latestSession?.date || null;
+      latestSession?.date ||
+      null;
+
+    const endedSessions =
+      sessions.filter(
+        isSessionEnded,
+      );
+
+    const totalEndedSessions =
+      endedSessions.length;
+
+    const attendanceRecords =
+      await attendanceCol
+        .find({
+          classId: {
+            $in: classConditions,
+          },
+
+          academicYear,
+        })
+        .toArray();
 
     const attendanceSummary =
       await attendanceCol
-        .aggregate([
-          {
-            $match: {
-              classId: {
-                $in: classConditions,
-              },
-
-              academicYear,
-            },
-          },
-
-          {
-            $sort: {
-              date: 1,
-              createdAt: 1,
-            },
-          },
-
-          {
-            $group: {
-              _id: "$studentId",
-
-              totalScore: {
-                $sum: {
-                  $ifNull: [
-                    "$score",
-                    0,
-                  ],
-                },
-              },
-
-              days: {
-                $sum: 1,
-              },
-
-              lateDays: {
-                $sum: {
-                  $cond: [
-                    {
-                      $eq: [
-                        "$status",
-                        "มาสาย",
-                      ],
-                    },
-                    1,
-                    0,
-                  ],
-                },
-              },
-
-              absentRecords: {
-                $sum: {
-                  $cond: [
-                    {
-                      $eq: [
-                        "$status",
-                        "ขาด",
-                      ],
-                    },
-                    1,
-                    0,
-                  ],
-                },
-              },
-
-              lastStatus: {
-                $last: "$status",
-              },
-
-              lastAttendanceDate:
-                {
-                  $last: "$date",
+        .aggregate<AttendanceAggregate>(
+          [
+            {
+              $match: {
+                classId: {
+                  $in:
+                    classConditions,
                 },
 
-              lastCheckInTime: {
-                $last:
-                  "$checkInTime",
-              },
-
-              lastCheckInHour: {
-                $last:
-                  "$checkInHour",
+                academicYear,
               },
             },
-          },
-        ])
+
+            {
+              $sort: {
+                date: 1,
+                createdAt: 1,
+              },
+            },
+
+            {
+              $group: {
+                _id: "$studentId",
+
+                totalScore: {
+                  $sum: {
+                    $ifNull: [
+                      "$score",
+                      0,
+                    ],
+                  },
+                },
+
+                days: {
+                  $sum: 1,
+                },
+
+                lateDays: {
+                  $sum: {
+                    $cond: [
+                      {
+                        $eq: [
+                          "$status",
+                          "มาสาย",
+                        ],
+                      },
+                      1,
+                      0,
+                    ],
+                  },
+                },
+
+                lastStatus: {
+                  $last:
+                    "$status",
+                },
+
+                lastAttendanceDate:
+                  {
+                    $last:
+                      "$date",
+                  },
+
+                lastCheckInTime:
+                  {
+                    $last:
+                      "$checkInTime",
+                  },
+
+                lastCheckInHour:
+                  {
+                    $last:
+                      "$checkInHour",
+                  },
+              },
+            },
+          ],
+        )
         .toArray();
 
     const attendanceMap =
@@ -238,113 +347,140 @@ export async function GET(req: Request) {
       );
 
     const result: AttendanceSummary[] =
-      students.map((student) => {
-        const summary =
-          attendanceMap.get(
+      students.map(
+        (student) => {
+          const studentId =
             String(
-              student.studentId,
-            ),
-          );
+              student.studentId ||
+                "",
+            );
 
-        const attendedDays =
-          summary?.days || 0;
+          const summary =
+            attendanceMap.get(
+              studentId,
+            );
 
-        const absentDays =
-          Math.max(
-            totalSessions -
-              attendedDays,
-            0,
-          );
+          const attendedDays =
+            summary?.days || 0;
 
-        let status: ThaiStatus =
-          "ยังไม่เช็คชื่อ";
-
-        if (
-          summary?.lastStatus
-        ) {
-          status =
-            summary.lastStatus;
-        }
-
-        else if (
-          totalSessions > 0
-        ) {
-          status = "ขาด";
-        }
-
-        return {
-          studentId:
-            student.studentId ||
-            "",
-
-          name:
-            student.fullName ||
-            student.name ||
-            "",
-
-          email:
-            student.email ||
-            student.studentEmail ||
-            "-",
-
-          section:
-            student.section ||
-            "-",
-
-          major:
-            student.major ||
-            student.branch ||
-            "-",
-
-          status,
-
-          score:
-            summary?.totalScore ||
-            0,
-
-          attendanceDate:
-            summary?.lastAttendanceDate ||
-            null,
-
-          checkInTime:
-            summary?.lastCheckInHour ||
-            (summary?.lastCheckInTime
-              ? new Date(
-                  summary.lastCheckInTime,
-                ).toLocaleTimeString(
-                  "th-TH",
-                  {
-                    hour: "2-digit",
-                    minute:
-                      "2-digit",
-                  },
-                )
-              : null),
-
-          totalScore:
-            summary?.totalScore ||
-            0,
-
-          days: attendedDays,
-
-          absentDays,
-
-          lateDays:
-            summary?.lateDays ||
-            0,
-
-          averageScore:
-            attendedDays > 0
-              ? Number(
+          /**
+           * นับขาดแบบราย session จริง
+           * ถ้า session จบแล้ว
+           * แต่ไม่มี attendance
+           * = ขาด
+           */
+          const absentDays =
+            endedSessions.filter(
+              (session) => {
+                return !attendanceRecords.find(
                   (
-                    (summary?.totalScore ||
-                      0) /
-                    attendedDays
-                  ).toFixed(2),
-                )
-              : 0,
-        };
-      });
+                    record,
+                  ) =>
+                    String(
+                      record.studentId,
+                    ) ===
+                      studentId &&
+                    String(
+                      record.sessionId,
+                    ) ===
+                      String(
+                        session._id,
+                      ),
+                );
+              },
+            ).length;
+
+          let status: ThaiStatus =
+            "ยังไม่เช็คชื่อ";
+
+          if (
+            summary?.lastStatus
+          ) {
+            status =
+              summary.lastStatus;
+          } else if (
+            absentDays > 0
+          ) {
+            status = "ขาด";
+          }
+
+          return {
+            studentId,
+
+            name:
+              student.fullName ||
+              student.name ||
+              "",
+
+            email:
+              student.email ||
+              student.studentEmail ||
+              "-",
+
+            section:
+              student.section ||
+              "-",
+
+            major:
+              student.major ||
+              student.branch ||
+              "-",
+
+            status,
+
+            score:
+              summary?.totalScore ||
+              0,
+
+            attendanceDate:
+              summary?.lastAttendanceDate ||
+              null,
+
+            checkInTime:
+              summary?.lastCheckInHour ||
+              (summary?.lastCheckInTime
+                ? new Date(
+                    summary.lastCheckInTime,
+                  ).toLocaleTimeString(
+                    "th-TH",
+                    {
+                      hour:
+                        "2-digit",
+
+                      minute:
+                        "2-digit",
+                    },
+                  )
+                : null),
+
+            totalScore:
+              summary?.totalScore ||
+              0,
+
+            days:
+              attendedDays,
+
+            absentDays,
+
+            lateDays:
+              summary?.lateDays ||
+              0,
+
+            averageScore:
+              attendedDays > 0
+                ? Number(
+                    (
+                      (summary?.totalScore ||
+                        0) /
+                      attendedDays
+                    ).toFixed(
+                      2,
+                    ),
+                  )
+                : 0,
+          };
+        },
+      );
 
     const majorsByClass = [
       ...new Set(
@@ -357,7 +493,8 @@ export async function GET(req: Request) {
               m,
             ): m is string =>
               Boolean(
-                m && m !== "-",
+                m &&
+                  m !== "-",
               ),
           ),
       ),
@@ -372,6 +509,8 @@ export async function GET(req: Request) {
         latestDate,
 
       totalSessions,
+
+      totalEndedSessions,
 
       data: result,
 
