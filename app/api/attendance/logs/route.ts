@@ -24,7 +24,6 @@ type AttendanceDoc = {
   status: ThaiStatus;
   score?: number;
   academicYear: number;
-
   date: string;
   checkInHour?: string;
   createdAt?: Date;

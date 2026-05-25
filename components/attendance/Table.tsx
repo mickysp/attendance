@@ -60,6 +60,11 @@ export default function AttendanceTable({ data, classId }: Props) {
   const [selectedStudent, setSelectedStudent] =
     useState<StudentAttendance | null>(null);
 
+  const hasData = data.length > 0;
+  const hasRowsOnPage = paginatedData.length > 0;
+
+  const shouldScroll = paginatedData.length > 8;
+
   const [openModal, setOpenModal] = useState(false);
 
   const formatThaiDate = (date?: string | null) => {
@@ -160,8 +165,18 @@ export default function AttendanceTable({ data, classId }: Props) {
 
   return (
     <div>
-      <div className="rounded-xl border border-gray-200 overflow-hidden max-h-[380px] flex flex-col">
-        <div className="overflow-x-auto overflow-y-visible">
+      <div
+        className={`rounded-xl border border-gray-200 overflow-hidden flex flex-col ${
+          paginatedData.length === 0 ? "" : "max-h-[380px]"
+        }`}
+      >
+        <div
+          className={`overflow-x-auto ${
+            paginatedData.length === 0
+              ? "overflow-y-visible"
+              : "overflow-y-auto"
+          }`}
+        >
           <table className="w-full text-base table-fixed">
             <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10">
               <tr>
@@ -468,7 +483,7 @@ export default function AttendanceTable({ data, classId }: Props) {
                   <p className="text-gray-500">อีเมล</p>
 
                   <p className="font-medium text-gray-800">
-                  {selectedStudent.email || "-"}
+                    {selectedStudent.email || "-"}
                   </p>
                 </div>
 

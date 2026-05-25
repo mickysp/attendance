@@ -361,7 +361,7 @@ export default function StudentTable({
           onClick={() => setOpenEdit(false)}
         >
           <div
-            className="w-full max-w-xl bg-white rounded-2xl shadow-sm p-6 max-h-[85vh] flex flex-col"
+            className="w-full max-w-3xl bg-white rounded-2xl shadow-sm p-6 max-h-[85vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 border-b border-gray-100 pb-4 mb-4">
@@ -537,7 +537,7 @@ export default function StudentTable({
           onClick={() => setOpenView(false)}
         >
           <div
-            className="w-full max-w-2xl bg-white rounded-2xl shadow-sm p-6 max-h-[85vh] flex flex-col"
+            className="w-full max-w-3xl bg-white rounded-2xl shadow-sm p-6 max-h-[85vh] flex flex-col"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 border-b border-gray-100 pb-4 mb-4">
