@@ -11,7 +11,6 @@ import {
 import { useAlert } from "@/context/AlertContext";
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/layouts/Sidebar";
-import { useConfirm } from "@/context/ConfirmContext";
 
 type Teacher = {
   _id: string;
@@ -24,6 +23,42 @@ type ClassInfo = {
   teacher?: Teacher;
 };
 
+type FormConfig = {
+  prefix: boolean;
+  firstname: boolean;
+  lastname: boolean;
+  studentId: boolean;
+  email: boolean;
+  section: boolean;
+  photo: boolean;
+  note: boolean;
+  location: boolean;
+};
+
+const defaultFormConfig: FormConfig = {
+  prefix: true,
+  firstname: true,
+  lastname: true,
+  studentId: true,
+  email: false,
+  section: false,
+  photo: false,
+  note: false,
+  location: false,
+};
+
+const fieldLabelMap: Record<keyof FormConfig, string> = {
+  prefix: "คำนำหน้า",
+  firstname: "ชื่อ",
+  lastname: "นามสกุล",
+  studentId: "รหัสนักศึกษา",
+  email: "อีเมล",
+  section: "เซคชั่น",
+  photo: "รูปภาพ",
+  note: "หมายเหตุ",
+  location: "สถานที่",
+};
+
 export default function QRPage() {
   const searchParams = useSearchParams();
   const classId = searchParams.get("classId");
@@ -32,21 +67,15 @@ export default function QRPage() {
   const [openQR, setOpenQR] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const { showConfirm } = useConfirm();
   const { showAlert } = useAlert();
   const router = useRouter();
 
-  const [formConfig, setFormConfig] = useState({
-    name: true,
-    studentId: true,
-    section: false,
-    email: false,
-    photo: false,
-    location: false,
-  });
+  const [formConfig, setFormConfig] = useState<FormConfig>(defaultFormConfig);
 
   const [schedule, setSchedule] = useState({
+    date: new Date().toISOString().split("T")[0],
     startTime: "",
+    endTime: "",
     lateAfter: 15,
     allowCheckIn: true,
     isOpen: true,
@@ -59,12 +88,16 @@ export default function QRPage() {
       const res = await fetch(`/api/schedule?classId=${classId}`);
       const data = await res.json();
 
-      if (data.success && data.schedule) {
+      if (data.success && data.data?.length > 0) {
+        const latest = data.data[data.data.length - 1];
+
         setSchedule({
-          startTime: data.schedule.startTime || "",
-          lateAfter: data.schedule.lateAfter ?? 15,
-          allowCheckIn: data.schedule.allowCheckIn ?? true,
-          isOpen: data.schedule.isOpen ?? true,
+          date: latest.date || new Date().toISOString().split("T")[0],
+          startTime: latest.startTime || "",
+          endTime: latest.endTime || latest.startTime || "",
+          lateAfter: latest.lateAfter ?? 15,
+          allowCheckIn: latest.allowCheckIn ?? true,
+          isOpen: latest.isOpen ?? true,
         });
       }
     };
@@ -106,10 +139,8 @@ export default function QRPage() {
 
   useEffect(() => {
     const fetchConfig = async () => {
-      if (!classId) return;
-
       try {
-        const res = await fetch(`/api/check-in?classId=${classId}`);
+        const res = await fetch("/api/check-in");
         const data = await res.json();
 
         if (data.success && data.config) {
@@ -121,7 +152,7 @@ export default function QRPage() {
     };
 
     fetchConfig();
-  }, [classId]);
+  }, []);
 
   const handleCopy = async () => {
     if (!link) return;
@@ -131,6 +162,11 @@ export default function QRPage() {
 
   const handleSaveSchedule = async () => {
     if (!classId) return;
+
+    if (!schedule.date) {
+      showAlert("กรุณาเลือกวันที่", "error");
+      return;
+    }
 
     if (!schedule.startTime) {
       showAlert("กรุณาเลือกเวลาเริ่มเรียน", "error");
@@ -147,7 +183,10 @@ export default function QRPage() {
         },
         body: JSON.stringify({
           classId,
+          className: classInfo?.className || "",
+          date: schedule.date,
           startTime: schedule.startTime,
+          endTime: schedule.endTime || schedule.startTime,
           lateAfter: schedule.lateAfter,
           allowCheckIn: schedule.allowCheckIn,
           isOpen: schedule.isOpen,
@@ -191,7 +230,6 @@ export default function QRPage() {
       const padding = 30;
       canvas.width = size;
       canvas.height = size;
-
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, size, size);
 
@@ -230,21 +268,21 @@ export default function QRPage() {
 
         {!loading && (
           <div className="flex flex-col bg-white rounded-2xl px-6 pt-6 pb-8">
-            <div className="mb-6 flex items-center gap-3">
+            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
               <button
                 onClick={() => router.back()}
                 className="w-8 h-8 flex items-center justify-center rounded-full border border-gray-300 hover:bg-gray-100 transition cursor-pointer"
               >
-                <ArrowLeftIcon className="w-4 h-4 text-gray-700" />
+                <ArrowLeftIcon className="w-3 h-3 text-gray-700" />
               </button>
-
-              <h1 className="text-[26px] font-semibold text-gray-800">
-                ข้อมูลแบบฟอร์มเช็คชื่อ
-              </h1>
-
-              <p className="text-sm text-gray-500">
-                สำหรับให้นักศึกษาสแกนเข้าเรียน
-              </p>
+              <div>
+                <h1 className="text-[26px] font-semibold text-gray-800">
+                  ข้อมูลแบบฟอร์มเช็คชื่อ
+                </h1>
+                <p className="text-sm text-gray-500">
+                  สำหรับให้นักศึกษาสแกนเข้าเรียน
+                </p>
+              </div>
             </div>
 
             {!classId ? (
@@ -267,35 +305,27 @@ export default function QRPage() {
 
                 <div className="mt-6 bg-white border border-gray-200 rounded-2xl p-5 mb-8">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm text-gray-800">
-                      ตั้งเวลาเช็คชื่อ
-                    </h3>
-
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500">เปิดใช้งาน</span>
-                      <button
-                        onClick={() =>
-                          setSchedule((prev) => ({
-                            ...prev,
-                            allowCheckIn: !prev.allowCheckIn,
-                          }))
-                        }
-                        className={`w-11 h-6 flex items-center rounded-full px-1 transition ${
-                          schedule.allowCheckIn ? "bg-green-500" : "bg-gray-300"
-                        }`}
-                      >
-                        <div
-                          className={`w-4 h-4 bg-white rounded-full shadow transform transition ${
-                            schedule.allowCheckIn
-                              ? "translate-x-5"
-                              : "translate-x-0"
-                          }`}
-                        />
-                      </button>
-                    </div>
+                    <h3 className="text-sm text-gray-800">ตั้งเวลาเช็คชื่อ</h3>
                   </div>
 
                   <div className="flex items-end gap-4 flex-wrap">
+                    <div className="flex flex-col">
+                      <label className="text-xs text-gray-500 mb-1">
+                        วันที่
+                      </label>
+                      <input
+                        type="date"
+                        value={schedule.date}
+                        onChange={(e) =>
+                          setSchedule({
+                            ...schedule,
+                            date: e.target.value,
+                          })
+                        }
+                        className="border border-gray-200 rounded-lg px-3 py-2 w-[250px] focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      />
+                    </div>
+
                     <div className="flex flex-col">
                       <label className="text-xs text-gray-500 mb-1">
                         เวลาเริ่มเรียน
@@ -307,6 +337,23 @@ export default function QRPage() {
                           setSchedule({
                             ...schedule,
                             startTime: e.target.value,
+                          })
+                        }
+                        className="border border-gray-200 rounded-lg px-3 py-2 w-[250px] focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      />
+                    </div>
+
+                    <div className="flex flex-col">
+                      <label className="text-xs text-gray-500 mb-1">
+                        เวลาเลิกเรียน
+                      </label>
+                      <input
+                        type="time"
+                        value={schedule.endTime}
+                        onChange={(e) =>
+                          setSchedule({
+                            ...schedule,
+                            endTime: e.target.value,
                           })
                         }
                         className="border border-gray-200 rounded-lg px-3 py-2 w-[250px] focus:outline-none focus:ring-2 focus:ring-blue-400"

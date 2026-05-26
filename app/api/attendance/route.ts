@@ -11,109 +11,437 @@ const getNowTH = () =>
     }),
   );
 
-const getAcademicYear = () => new Date().getFullYear() + 543;
+const getAcademicYear = () => {
+  const nowTH = getNowTH();
 
-function getStatus(now: Date, startTime: string, lateAfter: number) {
-  const [h, m] = startTime.split(":").map(Number);
+  return nowTH.getFullYear() + 543;
+};
 
-  const start = new Date(now);
-  start.setHours(h, m, 0, 0);
+const getDateTH = (date: Date) => {
+  return new Intl.DateTimeFormat("sv-SE", {
+    timeZone: "Asia/Bangkok",
+  }).format(date);
+};
+
+function createSessionDateTime(
+  date: string,
+  time: string,
+) {
+  return new Date(
+    `${date}T${time}:00+07:00`,
+  );
+}
+
+function getAttendanceStatus(session: {
+  date: string;
+  startTime: string;
+  endTime: string;
+  lateAfter: number;
+}) {
+  const now = getNowTH();
+
+  const start =
+    createSessionDateTime(
+      session.date,
+      session.startTime,
+    );
+
+  const end =
+    createSessionDateTime(
+      session.date,
+      session.endTime,
+    );
 
   const late = new Date(start);
-  late.setMinutes(late.getMinutes() + lateAfter);
 
-  return now <= late ? "มาเรียน" : "มาสาย";
+  late.setMinutes(
+    late.getMinutes() +
+      session.lateAfter,
+  );
+
+  if (now < start) {
+    return {
+      success: false,
+      message: "ยังไม่เปิดเช็คชื่อ",
+    };
+  }
+
+  if (now > end) {
+    return {
+      success: false,
+      message: "หมดเวลาเช็คชื่อแล้ว",
+    };
+  }
+
+  if (now <= late) {
+    return {
+      success: true,
+      status: "มาเรียน",
+      score: 1,
+    };
+  }
+
+  return {
+    success: true,
+    status: "มาสาย",
+    score: 0.5,
+  };
 }
 
-function getScore(status: "มาเรียน" | "มาสาย" | "ลา") {
-  if (status === "มาเรียน") return 1;
-  if (status === "มาสาย") return 0.5;
-  if (status === "ลา") return 1;
-  return 0;
-}
-
-export async function POST(req: Request) {
+export async function POST(
+  req: Request,
+) {
   try {
     const body = await req.json();
-    const { classId, sessionId, studentId, name, section, email } = body;
 
-    if (!classId || !sessionId || !studentId) {
+    const {
+      classId,
+      sessionId,
+      studentId,
+      name,
+      section,
+      email,
+    } = body;
+
+    if (
+      !classId ||
+      !sessionId ||
+      !studentId
+    ) {
       return NextResponse.json({
         success: false,
         message: "missing data",
       });
     }
 
-    const client = await clientPromise;
-    const db = client.db("attendance");
+    if (
+      !ObjectId.isValid(sessionId)
+    ) {
+      return NextResponse.json({
+        success: false,
+        message:
+          "sessionId ไม่ถูกต้อง",
+      });
+    }
 
-    const sessionsCol = db.collection("sessions");
-    const attendanceCol = db.collection("attendance");
-    const studentsCol = db.collection("students");
+    const client =
+      await clientPromise;
 
-    const sessionObjectId = new ObjectId(sessionId);
+    const db =
+      client.db("attendance");
 
-    const session = await sessionsCol.findOne({ _id: sessionObjectId });
+    const sessionsCol =
+      db.collection("sessions");
+
+    const attendanceCol =
+      db.collection("attendance");
+
+    const studentsCol =
+      db.collection("students");
+
+    const studentClassesCol =
+      db.collection(
+        "student_classes",
+      );
+
+    const sessionObjectId =
+      new ObjectId(sessionId);
+
+    const session =
+      await sessionsCol.findOne({
+        _id: sessionObjectId,
+      });
+
     if (!session) {
       return NextResponse.json({
         success: false,
-        message: "ไม่พบ session",
+        message:
+          "ไม่พบข้อมูล session",
       });
     }
 
-    const student = await studentsCol.findOne({ studentId });
+    console.log(
+      JSON.stringify(
+        session,
+        null,
+        2,
+      ),
+    );
+
+    const nowTH = getNowTH();
+
+    const todayTH =
+      getDateTH(nowTH);
+
+    console.log({
+      todayTH,
+      sessionDate:
+        session.date,
+      sessionId,
+    });
+
+
+    const sessionDate =
+      new Date(
+        `${session.date}T00:00:00+07:00`,
+      );
+
+    const todayDate =
+      new Date(
+        `${todayTH}T00:00:00+07:00`,
+      );
+
+    if (todayDate < sessionDate) {
+      return NextResponse.json({
+        success: false,
+        message:
+          "ยังไม่ถึงวันเรียน",
+      });
+    }
+
+    if (todayDate > sessionDate) {
+      return NextResponse.json({
+        success: false,
+        message:
+          "หมดเวลาเช็คชื่อแล้ว กรุณาใช้ session ล่าสุด",
+      });
+    }
+
+    if (
+      !session.startTime ||
+      !session.endTime
+    ) {
+      return NextResponse.json({
+        success: false,
+        message:
+          "session ไม่มีเวลาเริ่มหรือเวลาสิ้นสุด",
+      });
+    }
+
+    if (
+      session.allowCheckIn ===
+      false
+    ) {
+      return NextResponse.json({
+        success: false,
+        message:
+          "อาจารย์ปิดการเช็คชื่อ",
+      });
+    }
+
+    if (
+      session.isOpen === false
+    ) {
+      return NextResponse.json({
+        success: false,
+        message:
+          "session ยังไม่เปิดใช้งาน",
+      });
+    }
+
+    const student =
+      await studentsCol.findOne({
+        studentId,
+      });
+
     if (!student) {
       return NextResponse.json({
         success: false,
-        message: "ไม่พบนักศึกษา",
+        message:
+          "ไม่พบนักศึกษาในระบบ",
       });
     }
 
-    const nowTH = getNowTH();
-    const today = session.date;
-    const academicYear = getAcademicYear();
+    const studentRelation =
+      await studentClassesCol.findOne(
+        {
+          $and: [
+            {
+              $or: [
+                {
+                  studentId,
+                },
 
-    const exist = await attendanceCol.findOne({
-      sessionId: sessionObjectId,
-      studentId,
-      academicYear,
-    });
+                {
+                  studentId:
+                    student._id?.toString(),
+                },
+
+                {
+                  studentId:
+                    student._id,
+                },
+              ],
+            },
+
+            {
+              $or: [
+                {
+                  classId,
+                },
+
+                {
+                  classId:
+                    session.classId?.toString(),
+                },
+
+                {
+                  classId:
+                    session.classId,
+                },
+              ],
+            },
+          ],
+        },
+      );
+
+    if (!studentRelation) {
+      return NextResponse.json({
+        success: false,
+        message:
+          "นักศึกษาไม่ได้อยู่ในรายวิชานี้",
+      });
+    }
+
+    const academicYear =
+      getAcademicYear();
+
+    const exist =
+      await attendanceCol.findOne({
+        sessionId:
+          sessionObjectId,
+
+        studentId,
+
+        academicYear,
+      });
 
     if (exist) {
       return NextResponse.json({
         success: false,
-        message: "เช็คชื่อแล้ว",
+        message:
+          "เช็คชื่อแล้ว",
       });
     }
 
-    const status = getStatus(nowTH, session.startTime, session.lateAfter);
-    const score = getScore(status);
+    const attendanceResult =
+      getAttendanceStatus({
+        date: session.date,
 
-    await attendanceCol.insertOne({
-      sessionId: sessionObjectId,
-      classId: session.classId,
-      className: session.className,
+        startTime:
+          session.startTime,
+
+        endTime:
+          session.endTime,
+
+        lateAfter:
+          session.lateAfter ||
+          15,
+      });
+
+    if (
+      !attendanceResult.success
+    ) {
+      return NextResponse.json({
+        success: false,
+        message:
+          attendanceResult.message,
+      });
+    }
+
+    const insertData = {
+      sessionId:
+        sessionObjectId,
+
+      classId:
+        session.classId,
+
+      className:
+        session.className ||
+        "",
+
       studentId,
-      name,
-      section,
+
+      name:
+        name ||
+        student.fullName ||
+        "",
+
+      section:
+        section ||
+        student.section ||
+        "",
+
+      email:
+        email ||
+        student.email ||
+        "",
+
       academicYear,
-      date: today,
+
+      date: session.date,
+
       checkInTime: nowTH,
-      checkInHour: nowTH.toLocaleTimeString("th-TH"),
-      status,
-      score,
-    });
+
+      checkInHour:
+        nowTH.toLocaleTimeString(
+          "th-TH",
+        ),
+
+      status:
+        attendanceResult.status,
+
+      score:
+        attendanceResult.score,
+
+      createdAt: nowTH,
+
+      updatedAt: nowTH,
+    };
+
+    console.log(insertData);
+
+    await attendanceCol.insertOne(
+      insertData,
+    );
 
     return NextResponse.json({
       success: true,
-      message: "เช็คชื่อสำเร็จ",
-      data: { studentId, status, score },
-    });
 
+      message:
+        "เช็คชื่อสำเร็จ",
+
+      data: {
+        studentId,
+
+        sessionId,
+
+        sessionDate:
+          session.date,
+
+        checkInTime:
+          nowTH,
+
+        status:
+          attendanceResult.status,
+
+        score:
+          attendanceResult.score,
+      },
+    });
   } catch (error) {
+    console.error(
+      "ATTENDANCE ERROR:",
+      error,
+    );
+
     return NextResponse.json({
       success: false,
-      message: error instanceof Error ? error.message : "error",
+
+      message:
+        error instanceof Error
+          ? error.message
+          : "error",
     });
   }
 }

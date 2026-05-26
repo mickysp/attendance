@@ -23,7 +23,10 @@ const notoSansThai = Noto_Sans_Thai({
 });
 
 export const metadata: Metadata = {
-  title: "Attendy",
+  title: "Attendy | Attendance University Management",
+  icons: {
+    icon: "/icon.png",
+  },
 };
 
 export default function RootLayout({

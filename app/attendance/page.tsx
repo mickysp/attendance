@@ -18,14 +18,11 @@ type ClassItem = {
   academicYear?: number;
 };
 
-type Major = {
-  _id: string;
-  name: string;
-};
-
 type StudentAttendance = {
   studentId: string;
   name: string;
+  email: string;
+  attendanceDate?: string | null;
   section: string;
   major: string;
   status: "มาเรียน" | "มาสาย" | "ลา" | "ขาด";
@@ -33,6 +30,7 @@ type StudentAttendance = {
   checkInTime: string | null;
   totalScore: number;
   days: number;
+  absentDays: number;
   lateDays: number;
   averageScore: number;
 };
@@ -47,6 +45,8 @@ export default function AttendancePage() {
 
   const [majors, setMajors] = useState<{ id: string; name: string }[]>([]);
   const [selectedMajor, setSelectedMajor] = useState<string | null>(null);
+  const [sections, setSections] = useState<string[]>([]);
+  const [selectedSection, setSelectedSection] = useState<string | null>(null);
 
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [yearOptions, setYearOptions] = useState<number[]>([]);
@@ -59,7 +59,33 @@ export default function AttendancePage() {
     setSelectedMajor(null);
     setStudents([]);
     setMajors([]);
+    setSelectedSection(null);
+    setSections([]);
   };
+
+  type AttendanceStatus = "มาเรียน" | "มาสาย" | "ลา" | "ขาด" | null;
+
+  const [selectedStatus, setSelectedStatus] = useState<AttendanceStatus>(null);
+
+  const filteredStudents =
+    selectedStatus === null
+      ? students
+      : students.filter((s) => s.status === selectedStatus);
+
+  const displayStudents = filteredStudents.filter((s) => {
+    const matchMajor = selectedMajor ? s.major === selectedMajor : true;
+
+    const matchSection = selectedSection ? s.section === selectedSection : true;
+
+    const lowerKeyword = keyword.trim().toLowerCase();
+
+    const matchKeyword =
+      !lowerKeyword ||
+      s.name.toLowerCase().includes(lowerKeyword) ||
+      s.studentId.toLowerCase().includes(lowerKeyword);
+
+    return matchMajor && matchSection && matchKeyword;
+  });
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -156,6 +182,31 @@ export default function AttendancePage() {
     load();
   }, [selectedClass, selectedYear]);
 
+  useEffect(() => {
+    if (!selectedMajor) {
+      const allSections = Array.from(
+        new Set(students.map((s) => s.section).filter(Boolean)),
+      );
+
+      setSections(allSections);
+
+      return;
+    }
+
+    const filteredSections = Array.from(
+      new Set(
+        students
+          .filter((s) => s.major === selectedMajor)
+          .map((s) => s.section)
+          .filter(Boolean),
+      ),
+    );
+
+    setSections(filteredSections);
+
+    setSelectedSection(null);
+  }, [selectedMajor, students]);
+
   return (
     <div className="flex h-screen overflow-hidden bg-blue-50 font-noto">
       <Sidebar />
@@ -171,7 +222,21 @@ export default function AttendancePage() {
         )}
 
         {!loading && (
-          <div className="flex flex-col h-[90vh] bg-white rounded-2xl min-h-0 overflow-hidden">
+          <div
+            className={`flex flex-col bg-white rounded-2xl overflow-hidden ${
+              displayStudents.length === 0 &&
+              selectedClass &&
+              selectedMajor &&
+              students.length > 0
+                ? "h-[90vh]"
+                : !selectedClass ||
+                    !selectedMajor ||
+                    students.length === 0 ||
+                    displayStudents.length > 6
+                  ? "min-h-[90vh]"
+                  : "min-h-fit"
+            }`}
+          >
             <div className="px-6 pt-6 shrink-0 flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
                 <h1 className="text-[26px] font-semibold text-gray-800">
@@ -222,7 +287,8 @@ export default function AttendancePage() {
                               setSelectedMajor(null);
                               setStudents([]);
                               setMajors([]);
-
+                              setSelectedSection(null);
+                              setSections([]);
                               setOpenYear(false);
                             }}
                             className={`block w-full px-3 py-2 text-left text-sm cursor-pointer
@@ -241,10 +307,17 @@ export default function AttendancePage() {
                 </div>
               </div>
             </div>
-
             {selectedClass && selectedMajor && students.length > 0 && (
               <div className="px-6 pt-4">
-                <StudentSummaryCard students={students} />
+                <StudentSummaryCard
+                  students={students}
+                  selectedStatus={selectedStatus}
+                  onSelectStatus={(status) => {
+                    setSelectedStatus((prev) =>
+                      prev === status ? null : status,
+                    );
+                  }}
+                />
               </div>
             )}
             <div className="px-6 mt-4 flex items-start gap-4">
@@ -257,12 +330,15 @@ export default function AttendancePage() {
                 onChange={(value) => {
                   setSelectedClass(value);
                   setSelectedMajor(null);
+                  setSelectedSection(null);
                   setStudents([]);
                   setMajors([]);
+                  setSections([]);
+                  setKeyword("");
                 }}
                 keyword={keyword}
                 onKeywordChange={setKeyword}
-                showSearch={true}
+                showSearch={!!selectedClass && !!selectedMajor}
                 showClear={false}
                 placeholder="เลือกวิชา"
               />
@@ -284,10 +360,9 @@ export default function AttendancePage() {
                 />
               )}
             </div>
-
-            <div className="flex-1 min-h-0 p-6 overflow-y-auto">
+            <div className="flex-1 min-h-0 p-6 flex flex-col">
               {!selectedClass ? (
-                <div className="h-full flex flex-col items-center justify-center text-center text-gray-400">
+                <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-400">
                   <div className="mb-4 flex items-center justify-center w-28 h-28 rounded-full bg-gray-100">
                     <img src="/not-exist.png" className="w-28 h-28" />
                   </div>
@@ -301,7 +376,7 @@ export default function AttendancePage() {
                   </p>
                 </div>
               ) : majors.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center text-gray-400">
+                <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-400">
                   <div className="mb-4 flex items-center justify-center w-28 h-28 rounded-full bg-gray-100">
                     <img src="/not-exist.png" className="w-28 h-28" />
                   </div>
@@ -309,13 +384,9 @@ export default function AttendancePage() {
                   <p className="text-base font-medium text-gray-500">
                     ยังไม่มีข้อมูลนักศึกษา
                   </p>
-
-                  <p className="text-sm text-gray-400 mt-1">
-                    วิชานี้ยังไม่มีนักศึกษาลงทะเบียน
-                  </p>
                 </div>
               ) : !selectedMajor ? (
-                <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
                   <div className="mb-4 w-28 h-28 rounded-full bg-gray-100 flex items-center justify-center">
                     <img src="/not-exist.png" className="w-28 h-28" />
                   </div>
@@ -323,13 +394,9 @@ export default function AttendancePage() {
                   <p className="text-base font-medium text-gray-500">
                     ยังไม่ได้เลือกสาขา
                   </p>
-
-                  <p className="text-sm text-gray-400 mt-1">
-                    กรุณาเลือกสาขาเพื่อดูข้อมูลนักศึกษา
-                  </p>
                 </div>
               ) : students.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
                   <div className="mb-4 w-28 h-28 rounded-full bg-gray-100 flex items-center justify-center">
                     <img src="/not-exist.png" className="w-28 h-28" />
                   </div>
@@ -345,10 +412,13 @@ export default function AttendancePage() {
               ) : (
                 <>
                   <div className="text-base text-gray-600 font-semibold mb-6">
-                    Student ทั้งหมด {students.length} รายการ
+                    Student ทั้งหมด {displayStudents.length} รายการ
                   </div>
 
-                  <AttendanceTable data={students} classId={selectedClass} />
+                  <AttendanceTable
+                    classId={selectedClass}
+                    data={displayStudents}
+                  />
                 </>
               )}
             </div>
