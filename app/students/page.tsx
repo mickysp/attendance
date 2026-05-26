@@ -5,7 +5,6 @@ import Sidebar from "@/components/layouts/Sidebar";
 import {
   DocumentArrowUpIcon,
   ChevronDownIcon,
-  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 import StudentFilter from "@/components/students/Select";
 import { useRouter } from "next/navigation";
@@ -306,7 +305,7 @@ export default function StudentsPage() {
 
                   <button
                     onClick={() => setOpenImport(true)}
-                    className="h-[40px] px-4 rounded-md border border-gray-300 text-base text-gray-700 hover:bg-gray-100 cursor-pointer"
+                    className="h-[40px] px-4 rounded-md border border-gray-300 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
                   >
                     Import
                   </button>

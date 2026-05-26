@@ -8,7 +8,8 @@ import {
   BookOpenIcon,
   ArrowRightOnRectangleIcon,
   Bars3Icon,
-  ClipboardDocumentCheckIcon
+  ClipboardDocumentCheckIcon,
+  Cog6ToothIcon
 } from "@heroicons/react/24/outline";
 import { ReactNode, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
@@ -123,6 +124,14 @@ export default function Sidebar() {
               active={pathname === "/attendance"}
               onClick={() => router.push("/attendance")}
             />
+
+            <SidebarItem
+              icon={<ClipboardDocumentCheckIcon />}
+              label="Form Attendance"
+              collapsed={collapsed}
+              active={pathname.startsWith("/check-in/configform")}
+              onClick={() => router.push("/check-in/configform")}
+            />
           </div>
 
           {!collapsed && (
@@ -131,8 +140,8 @@ export default function Sidebar() {
 
           <div className="flex flex-col gap-2">
             <SidebarItem
-              icon={<ClipboardDocumentCheckIcon />}
-              label="ตัวอย่างแบบฟอร์มเช็คชื่อ"
+              icon={<Cog6ToothIcon />}
+              label="Setting"
               collapsed={collapsed}
               active={pathname.startsWith("/check-in/configform")}
               onClick={() => router.push("/check-in/configform")}
