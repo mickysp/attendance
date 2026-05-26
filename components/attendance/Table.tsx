@@ -166,17 +166,15 @@ export default function AttendanceTable({ data, classId }: Props) {
 
   return (
     <div>
-      <div
-        className={`rounded-xl border border-gray-200 overflow-hidden ${
-          paginatedData.length > 8 ? "max-h-[380px]" : ""
-        }`}
-      >
+      <div className="rounded-xl border border-gray-200 overflow-hidden">
         <div
-          className={`overflow-x-auto ${
-            paginatedData.length > 8 ? "overflow-y-auto" : "overflow-y-visible"
+          className={`relative overflow-x-auto ${
+            paginatedData.length > 7
+              ? "overflow-y-auto max-h-[380px]"
+              : "overflow-y-visible"
           }`}
         >
-          <table className="min-w-[1400px] w-full text-base table-fixed">
+          <table className="w-max min-w-full text-base table-fixed">
             <thead className="sticky top-0 z-50 bg-gray-50 text-gray-600">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold w-[150px]">

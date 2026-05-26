@@ -157,7 +157,6 @@ export default function AttendancePage() {
             name: m,
           })),
         );
-
       } catch (err) {
         console.error(err);
       } finally {
@@ -208,7 +207,21 @@ export default function AttendancePage() {
         )}
 
         {!loading && (
-          <div className="flex flex-col bg-white rounded-2xl overflow-hidden">
+          <div
+            className={`flex flex-col bg-white rounded-2xl overflow-hidden ${
+              filteredStudents.length === 0 &&
+              selectedClass &&
+              selectedMajor &&
+              students.length > 0
+                ? "h-[90vh]"
+                : !selectedClass ||
+                    !selectedMajor ||
+                    students.length === 0 ||
+                    filteredStudents.length > 6
+                  ? "min-h-[90vh]"
+                  : "min-h-fit"
+            }`}
+          >
             <div className="px-6 pt-6 shrink-0 flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
                 <h1 className="text-[26px] font-semibold text-gray-800">
@@ -264,10 +277,11 @@ export default function AttendancePage() {
                               setOpenYear(false);
                             }}
                             className={`block w-full px-3 py-2 text-left text-sm cursor-pointer
-                            ${selectedYear === year
+                            ${
+                              selectedYear === year
                                 ? "bg-blue-50 text-blue-600 font-medium"
                                 : "hover:bg-gray-100 text-gray-700"
-                              }`}
+                            }`}
                           >
                             {year}
                           </button>
@@ -278,7 +292,6 @@ export default function AttendancePage() {
                 </div>
               </div>
             </div>
-
             {selectedClass && selectedMajor && students.length > 0 && (
               <div className="px-6 pt-4">
                 <StudentSummaryCard
@@ -331,10 +344,9 @@ export default function AttendancePage() {
                 />
               )}
             </div>
-
-            <div className="flex-1 min-h-0 p-6 overflow-y-auto">
+            <div className="flex-1 min-h-0 p-6 flex flex-col">
               {!selectedClass ? (
-                <div className="h-full flex flex-col items-center justify-center text-center text-gray-400">
+                <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-400">
                   <div className="mb-4 flex items-center justify-center w-28 h-28 rounded-full bg-gray-100">
                     <img src="/not-exist.png" className="w-28 h-28" />
                   </div>
@@ -348,7 +360,7 @@ export default function AttendancePage() {
                   </p>
                 </div>
               ) : majors.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-center text-gray-400">
+                <div className="flex-1 flex flex-col items-center justify-center text-center text-gray-400">
                   <div className="mb-4 flex items-center justify-center w-28 h-28 rounded-full bg-gray-100">
                     <img src="/not-exist.png" className="w-28 h-28" />
                   </div>
@@ -356,13 +368,9 @@ export default function AttendancePage() {
                   <p className="text-base font-medium text-gray-500">
                     ยังไม่มีข้อมูลนักศึกษา
                   </p>
-
-                  <p className="text-sm text-gray-400 mt-1">
-                    วิชานี้ยังไม่มีนักศึกษาลงทะเบียน
-                  </p>
                 </div>
               ) : !selectedMajor ? (
-                <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
                   <div className="mb-4 w-28 h-28 rounded-full bg-gray-100 flex items-center justify-center">
                     <img src="/not-exist.png" className="w-28 h-28" />
                   </div>
@@ -370,13 +378,9 @@ export default function AttendancePage() {
                   <p className="text-base font-medium text-gray-500">
                     ยังไม่ได้เลือกสาขา
                   </p>
-
-                  <p className="text-sm text-gray-400 mt-1">
-                    กรุณาเลือกสาขาเพื่อดูข้อมูลนักศึกษา
-                  </p>
                 </div>
               ) : students.length === 0 ? (
-                <div className="h-full flex flex-col items-center justify-center text-gray-400">
+                <div className="flex-1 flex flex-col items-center justify-center text-gray-400">
                   <div className="mb-4 w-28 h-28 rounded-full bg-gray-100 flex items-center justify-center">
                     <img src="/not-exist.png" className="w-28 h-28" />
                   </div>
