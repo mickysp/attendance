@@ -116,8 +116,8 @@ export default function SubjectSelect({
               pr-9
               py-[10px]
               text-sm
-              border
               border-gray-200
+              border
               rounded-md
               bg-white
               focus:outline-none
