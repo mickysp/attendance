@@ -18,11 +18,6 @@ type ClassItem = {
   academicYear?: number;
 };
 
-type Major = {
-  _id: string;
-  name: string;
-};
-
 type StudentAttendance = {
   studentId: string;
   name: string;
@@ -50,6 +45,8 @@ export default function AttendancePage() {
 
   const [majors, setMajors] = useState<{ id: string; name: string }[]>([]);
   const [selectedMajor, setSelectedMajor] = useState<string | null>(null);
+  const [sections, setSections] = useState<string[]>([]);
+  const [selectedSection, setSelectedSection] = useState<string | null>(null);
 
   const [selectedYear, setSelectedYear] = useState<number | null>(null);
   const [yearOptions, setYearOptions] = useState<number[]>([]);
@@ -62,6 +59,8 @@ export default function AttendancePage() {
     setSelectedMajor(null);
     setStudents([]);
     setMajors([]);
+    setSelectedSection(null);
+    setSections([]);
   };
 
   type AttendanceStatus = "มาเรียน" | "มาสาย" | "ลา" | "ขาด" | null;
@@ -158,6 +157,7 @@ export default function AttendancePage() {
             name: m,
           })),
         );
+
       } catch (err) {
         console.error(err);
       } finally {
@@ -167,6 +167,31 @@ export default function AttendancePage() {
 
     load();
   }, [selectedClass, selectedYear]);
+
+  useEffect(() => {
+    if (!selectedMajor) {
+      const allSections = Array.from(
+        new Set(students.map((s) => s.section).filter(Boolean)),
+      );
+
+      setSections(allSections);
+
+      return;
+    }
+
+    const filteredSections = Array.from(
+      new Set(
+        students
+          .filter((s) => s.major === selectedMajor)
+          .map((s) => s.section)
+          .filter(Boolean),
+      ),
+    );
+
+    setSections(filteredSections);
+
+    setSelectedSection(null);
+  }, [selectedMajor, students]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-blue-50 font-noto">
@@ -183,7 +208,7 @@ export default function AttendancePage() {
         )}
 
         {!loading && (
-          <div className="flex flex-col h-[90vh] bg-white rounded-2xl min-h-0 overflow-hidden">
+          <div className="flex flex-col bg-white rounded-2xl overflow-hidden">
             <div className="px-6 pt-6 shrink-0 flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
                 <h1 className="text-[26px] font-semibold text-gray-800">
@@ -234,15 +259,15 @@ export default function AttendancePage() {
                               setSelectedMajor(null);
                               setStudents([]);
                               setMajors([]);
-
+                              setSelectedSection(null);
+                              setSections([]);
                               setOpenYear(false);
                             }}
                             className={`block w-full px-3 py-2 text-left text-sm cursor-pointer
-                            ${
-                              selectedYear === year
+                            ${selectedYear === year
                                 ? "bg-blue-50 text-blue-600 font-medium"
                                 : "hover:bg-gray-100 text-gray-700"
-                            }`}
+                              }`}
                           >
                             {year}
                           </button>
@@ -277,8 +302,10 @@ export default function AttendancePage() {
                 onChange={(value) => {
                   setSelectedClass(value);
                   setSelectedMajor(null);
+                  setSelectedSection(null);
                   setStudents([]);
                   setMajors([]);
+                  setSections([]);
                 }}
                 keyword={keyword}
                 onKeywordChange={setKeyword}
@@ -370,9 +397,17 @@ export default function AttendancePage() {
 
                   <AttendanceTable
                     classId={selectedClass}
-                    data={filteredStudents.filter((s) =>
-                      selectedMajor ? s.major === selectedMajor : true,
-                    )}
+                    data={filteredStudents.filter((s) => {
+                      const matchMajor = selectedMajor
+                        ? s.major === selectedMajor
+                        : true;
+
+                      const matchSection = selectedSection
+                        ? s.section === selectedSection
+                        : true;
+
+                      return matchMajor && matchSection;
+                    })}
                   />
                 </>
               )}

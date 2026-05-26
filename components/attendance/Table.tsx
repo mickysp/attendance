@@ -7,6 +7,7 @@ import {
   ClockIcon,
   MapPinIcon,
   PhotoIcon,
+  DocumentTextIcon,
 } from "@heroicons/react/24/outline";
 
 type StudentAttendance = {
@@ -166,46 +167,44 @@ export default function AttendanceTable({ data, classId }: Props) {
   return (
     <div>
       <div
-        className={`rounded-xl border border-gray-200 overflow-hidden flex flex-col ${
-          paginatedData.length === 0 ? "" : "max-h-[380px]"
+        className={`rounded-xl border border-gray-200 overflow-hidden ${
+          paginatedData.length > 8 ? "max-h-[380px]" : ""
         }`}
       >
         <div
           className={`overflow-x-auto ${
-            paginatedData.length === 0
-              ? "overflow-y-visible"
-              : "overflow-y-auto"
+            paginatedData.length > 8 ? "overflow-y-auto" : "overflow-y-visible"
           }`}
         >
-          <table className="w-full text-base table-fixed">
-            <thead className="bg-gray-50 text-gray-600 sticky top-0 z-10">
+          <table className="min-w-[1400px] w-full text-base table-fixed">
+            <thead className="sticky top-0 z-50 bg-gray-50 text-gray-600">
               <tr>
                 <th className="px-4 py-3 text-left font-semibold w-[150px]">
                   รหัสนักศึกษา
                 </th>
-                <th className="px-4 py-3 text-left font-semibold w-[150px]">
+                <th className="px-4 py-3 text-left font-semibold w-[156px]">
                   ชื่อ-นามสกุล
                 </th>
-                <th className="px-4 py-3 text-center font-semibold w-[180px]">
+                <th className="px-4 py-3 text-center font-semibold w-[170px]">
                   วันที่เช็คชื่อ
                 </th>
-                <th className="px-4 py-3 text-center font-semibold w-[150px]">
+                <th className="px-4 py-3 text-center font-semibold w-[130px]">
                   ขาด
                 </th>
-                <th className="px-4 py-3 text-center font-semibold w-[150px]">
+                <th className="px-4 py-3 text-center font-semibold w-[130px]">
                   มาสาย
                 </th>
-                <th className="px-4 py-3 text-center font-semibold w-[200px]">
+                <th className="px-4 py-3 text-center font-semibold w-[150px]">
                   เข้าเรียน
                 </th>
                 <th className="px-4 py-3 text-center font-semibold w-[150px]">
                   คะแนน
                 </th>
-                <th className="px-4 py-3 text-center font-semibold w-[150px]">
+                <th className="px-4 py-3 text-left font-semibold w-[130px] sticky top-0 right-[200px] z-[60] bg-gray-50 border-l border-gray-200 shadow-[-6px_0_14px_rgba(0,0,0,0.08)]">
                   สถานะ
                 </th>
-                <th className="px-4 py-3 text-center font-semibold w-[100px]">
-                  รายละเอียด
+                <th className="px-4 py-3 text-left font-semibold w-[200px] sticky top-0 right-0 z-[60] bg-gray-50">
+                  จัดการ
                 </th>
               </tr>
             </thead>
@@ -230,8 +229,8 @@ export default function AttendanceTable({ data, classId }: Props) {
                             {formatThaiDate(s.attendanceDate)}
                           </span>
                         ) : (
-                          <div className="inline-flex items-center rounded-xl border border-dashed border-gray-200 px-3 py-2">
-                            <span className="text-xs text-gray-400">
+                          <div className="inline-flex items-center rounded-full border border-gray-200 bg-gray-50 px-3 py-1">
+                            <span className="text-xs font-medium text-gray-400">
                               ไม่มีข้อมูล
                             </span>
                           </div>
@@ -271,25 +270,25 @@ export default function AttendanceTable({ data, classId }: Props) {
                       {s.score}
                     </td>
 
-                    <td className="px-4 py-3.5 text-sm text-center">
-                      <div className="flex items-center justify-center">
+                    <td className="px-4 py-3.5 text-sm text-left sticky right-[100px] z-10 bg-white border-l border-gray-100">
+                      <div className="flex items-left justify-centlefter">
                         {(() => {
                           const currentStatus =
                             statusMap[status] ?? statusMap["ยังไม่เช็คชื่อ"];
 
                           return (
                             <div
-                              className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 border bg-white ${currentStatus.textColor}
+                              className={`inline-flex items-center gap-2 rounded-full px-3 py-1.5 border ${currentStatus.textColor}
                               ${
                                 status === "มาเรียน"
-                                  ? "border-emerald-100"
+                                  ? "border-emerald-100 bg-emerald-50"
                                   : status === "มาสาย"
-                                    ? "border-amber-100"
+                                    ? "border-amber-100 bg-amber-50"
                                     : status === "ลา"
-                                      ? "border-sky-100"
+                                      ? "border-sky-100 bg-sky-50"
                                       : status === "ขาด"
-                                        ? "border-red-100"
-                                        : "border-gray-200"
+                                        ? "border-red-100 bg-red-50"
+                                        : "border-gray-200 bg-gray-50"
                               }
                               `}
                             >
@@ -306,55 +305,72 @@ export default function AttendanceTable({ data, classId }: Props) {
                       </div>
                     </td>
 
-                    <td className="px-4 py-3.5 text-center">
-                      <button
-                        onClick={async () => {
-                          try {
-                            setLoadingLogs(true);
+                    <td className="px-4 py-3.5 text-center sticky right-0 z-20 bg-white">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          title="ดูรายละเอียด"
+                          onClick={async () => {
+                            try {
+                              setLoadingLogs(true);
 
-                            setLogs([]);
-
-                            if (!classId) {
-                              alert("ไม่พบ classId");
-                              return;
-                            }
-
-                            const res = await fetch(
-                              `/api/attendance/logs?classId=${classId}&studentId=${s.studentId}`,
-                            );
-
-                            const text = await res.text();
-
-                            console.log(text);
-
-                            const json = text
-                              ? JSON.parse(text)
-                              : {
-                                  success: false,
-                                  logs: [],
-                                };
-
-                            if (json.success) {
-                              setLogs(json.logs || []);
-                            } else {
                               setLogs([]);
+
+                              if (!classId) {
+                                alert("ไม่พบ classId");
+                                return;
+                              }
+
+                              const res = await fetch(
+                                `/api/attendance/logs?classId=${classId}&studentId=${s.studentId}`,
+                              );
+
+                              const text = await res.text();
+
+                              console.log(text);
+
+                              const json = text
+                                ? JSON.parse(text)
+                                : {
+                                    success: false,
+                                    logs: [],
+                                  };
+
+                              if (json.success) {
+                                setLogs(json.logs || []);
+                              } else {
+                                setLogs([]);
+                              }
+
+                              setSelectedStudent(s);
+
+                              setOpenModal(true);
+                            } catch (error) {
+                              console.error(error);
+
+                              setLogs([]);
+                            } finally {
+                              setLoadingLogs(false);
                             }
+                          }}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 p-2 hover:bg-gray-50 transition cursor-pointer"
+                        >
+                          <EyeIcon className="w-4 h-4 text-gray-500" />
+                          <span className="text-xs font-medium text-gray-700">
+                            รายละเอียด
+                          </span>
+                        </button>
 
-                            setSelectedStudent(s);
+                        <button
+                          title="แจ้งลา"
+                          className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 hover:bg-sky-100 transition cursor-pointer"
+                        >
+                          <DocumentTextIcon className="w-4 h-4 text-sky-600" />
 
-                            setOpenModal(true);
-                          } catch (error) {
-                            console.error(error);
-
-                            setLogs([]);
-                          } finally {
-                            setLoadingLogs(false);
-                          }
-                        }}
-                        className="inline-flex items-center justify-center rounded-lg border border-gray-200 p-2 hover:bg-gray-50 transition cursor-pointer"
-                      >
-                        <EyeIcon className="w-4 h-4 text-gray-500" />
-                      </button>
+                          <span className="text-xs font-medium text-sky-700">
+                            แจ้งลา
+                          </span>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 );
