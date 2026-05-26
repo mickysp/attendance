@@ -72,6 +72,21 @@ export default function AttendancePage() {
       ? students
       : students.filter((s) => s.status === selectedStatus);
 
+  const displayStudents = filteredStudents.filter((s) => {
+    const matchMajor = selectedMajor ? s.major === selectedMajor : true;
+
+    const matchSection = selectedSection ? s.section === selectedSection : true;
+
+    const lowerKeyword = keyword.trim().toLowerCase();
+
+    const matchKeyword =
+      !lowerKeyword ||
+      s.name.toLowerCase().includes(lowerKeyword) ||
+      s.studentId.toLowerCase().includes(lowerKeyword);
+
+    return matchMajor && matchSection && matchKeyword;
+  });
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (yearRef.current && !yearRef.current.contains(event.target as Node)) {
@@ -209,7 +224,7 @@ export default function AttendancePage() {
         {!loading && (
           <div
             className={`flex flex-col bg-white rounded-2xl overflow-hidden ${
-              filteredStudents.length === 0 &&
+              displayStudents.length === 0 &&
               selectedClass &&
               selectedMajor &&
               students.length > 0
@@ -217,7 +232,7 @@ export default function AttendancePage() {
                 : !selectedClass ||
                     !selectedMajor ||
                     students.length === 0 ||
-                    filteredStudents.length > 6
+                    displayStudents.length > 6
                   ? "min-h-[90vh]"
                   : "min-h-fit"
             }`}
@@ -319,10 +334,11 @@ export default function AttendancePage() {
                   setStudents([]);
                   setMajors([]);
                   setSections([]);
+                  setKeyword("");
                 }}
                 keyword={keyword}
                 onKeywordChange={setKeyword}
-                showSearch={true}
+                showSearch={!!selectedClass && !!selectedMajor}
                 showClear={false}
                 placeholder="เลือกวิชา"
               />
@@ -396,22 +412,12 @@ export default function AttendancePage() {
               ) : (
                 <>
                   <div className="text-base text-gray-600 font-semibold mb-6">
-                    Student ทั้งหมด {students.length} รายการ
+                    Student ทั้งหมด {displayStudents.length} รายการ
                   </div>
 
                   <AttendanceTable
                     classId={selectedClass}
-                    data={filteredStudents.filter((s) => {
-                      const matchMajor = selectedMajor
-                        ? s.major === selectedMajor
-                        : true;
-
-                      const matchSection = selectedSection
-                        ? s.section === selectedSection
-                        : true;
-
-                      return matchMajor && matchSection;
-                    })}
+                    data={displayStudents}
                   />
                 </>
               )}

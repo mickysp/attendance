@@ -18,9 +18,7 @@ type Props = {
   onChange: (id: string | null) => void;
 
   keyword?: string;
-  onKeywordChange?: (
-    value: string,
-  ) => void;
+  onKeywordChange?: (value: string) => void;
 
   showSearch?: boolean;
 
@@ -42,58 +40,23 @@ export default function SubjectSelect({
 
   placeholder = "เลือกวิชา",
 }: Props) {
-  const [open, setOpen] =
-    useState(false);
+  const [open, setOpen] = useState(false);
 
-  const ref =
-    useRef<HTMLDivElement | null>(
-      null,
-    );
+  const ref = useRef<HTMLDivElement | null>(null);
 
-  const selected = subjects.find(
-    (s) => s.id === value,
-  );
-  
+  const selected = subjects.find((s) => s.id === value);
 
   useEffect(() => {
-    const handleClickOutside = (
-      e: MouseEvent,
-    ) => {
-      if (
-        ref.current &&
-        !ref.current.contains(
-          e.target as Node,
-        )
-      ) {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
       }
     };
 
-    document.addEventListener(
-      "mousedown",
-      handleClickOutside,
-    );
+    document.addEventListener("mousedown", handleClickOutside);
 
-    return () =>
-      document.removeEventListener(
-        "mousedown",
-        handleClickOutside,
-      );
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const filteredSubjects =
-    useMemo(() => {
-      if (!keyword?.trim())
-        return subjects;
-
-      return subjects.filter((s) =>
-        s.name
-          .toLowerCase()
-          .includes(
-            keyword.toLowerCase(),
-          ),
-      );
-    }, [subjects, keyword]);
 
   return (
     <div className="inline-flex items-center gap-4 flex-shrink-0">
@@ -105,11 +68,7 @@ export default function SubjectSelect({
             type="text"
             placeholder="ค้นหาชื่อ หรือรหัสนักศึกษา"
             value={keyword}
-            onChange={(e) =>
-              onKeywordChange?.(
-                e.target.value,
-              )
-            }
+            onChange={(e) => onKeywordChange?.(e.target.value)}
             className="
               w-full
               pl-9
@@ -130,9 +89,7 @@ export default function SubjectSelect({
           {keyword && (
             <button
               type="button"
-              onClick={() =>
-                onKeywordChange?.("")
-              }
+              onClick={() => onKeywordChange?.("")}
               className="absolute right-3 top-1/2 -translate-y-1/2"
             >
               <XMarkIcon className="w-4 h-4 text-gray-400 hover:text-blue-500 cursor-pointer" />
@@ -141,10 +98,7 @@ export default function SubjectSelect({
         </div>
       )}
 
-      <div
-        className="relative w-[260px] flex-shrink-0"
-        ref={ref}
-      >
+      <div className="relative w-[260px] flex-shrink-0" ref={ref}>
         <div
           className="
             px-3
@@ -163,20 +117,14 @@ export default function SubjectSelect({
             hover:bg-gray-50
             cursor-pointer
           "
-          onClick={() =>
-            setOpen(!open)
-          }
+          onClick={() => setOpen(!open)}
         >
           <span
             className={`block truncate flex-1 ${
-              selected
-                ? "text-gray-800"
-                : "text-gray-400"
+              selected ? "text-gray-800" : "text-gray-400"
             }`}
           >
-            {selected
-              ? selected.name
-              : placeholder}
+            {selected ? selected.name : placeholder}
           </span>
 
           <ChevronDownIcon
@@ -189,41 +137,33 @@ export default function SubjectSelect({
         {open && (
           <div className="absolute z-20 mt-1 w-full rounded-md bg-white shadow-lg border border-gray-200 overflow-hidden">
             <div className="max-h-60 overflow-y-auto">
-              {filteredSubjects.length ===
-              0 ? (
+              {subjects.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-gray-400">
                   ไม่พบข้อมูล
                 </div>
               ) : (
-                filteredSubjects.map(
-                  (sub) => {
-                    const isSelected =
-                      sub.id === value;
+                subjects.map((sub) => {
+                  const isSelected = sub.id === value;
 
-                    return (
-                      <button
-                        key={sub.id}
-                        type="button"
-                        onClick={() => {
-                          onChange(
-                            sub.id,
-                          );
+                  return (
+                    <button
+                      key={sub.id}
+                      type="button"
+                      onClick={() => {
+                        onChange(sub.id);
 
-                          setOpen(
-                            false,
-                          );
-                        }}
-                        className={`w-full px-4 py-2.5 text-left text-sm cursor-pointer transition ${
-                          isSelected
-                            ? "bg-blue-50 text-blue-600 font-medium"
-                            : "hover:bg-gray-100 text-gray-700"
-                        }`}
-                      >
-                        {sub.name}
-                      </button>
-                    );
-                  },
-                )
+                        setOpen(false);
+                      }}
+                      className={`w-full px-4 py-2.5 text-left text-sm cursor-pointer transition ${
+                        isSelected
+                          ? "bg-blue-50 text-blue-600 font-medium"
+                          : "hover:bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      {sub.name}
+                    </button>
+                  );
+                })
               )}
             </div>
           </div>
