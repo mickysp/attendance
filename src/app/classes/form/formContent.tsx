@@ -11,6 +11,8 @@ import {
 import { useAlert } from "@/context/AlertContext";
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/layouts/Sidebar";
+import "react-datepicker/dist/react-datepicker.css";
+import DatePicker from "react-datepicker";
 
 type Teacher = {
   _id: string;
@@ -72,8 +74,15 @@ export default function QRPage() {
 
   const [formConfig, setFormConfig] = useState<FormConfig>(defaultFormConfig);
 
-  const [schedule, setSchedule] = useState({
-    date: new Date().toISOString().split("T")[0],
+  const [schedule, setSchedule] = useState<{
+    date: Date;
+    startTime: string;
+    endTime: string;
+    lateAfter: number;
+    allowCheckIn: boolean;
+    isOpen: boolean;
+  }>({
+    date: new Date(),
     startTime: "",
     endTime: "",
     lateAfter: 15,
@@ -92,7 +101,7 @@ export default function QRPage() {
         const latest = data.data[data.data.length - 1];
 
         setSchedule({
-          date: latest.date || new Date().toISOString().split("T")[0],
+          date: latest.date ? new Date(latest.date) : new Date(),
           startTime: latest.startTime || "",
           endTime: latest.endTime || latest.startTime || "",
           lateAfter: latest.lateAfter ?? 15,
@@ -184,7 +193,7 @@ export default function QRPage() {
         body: JSON.stringify({
           classId,
           className: classInfo?.className || "",
-          date: schedule.date,
+          date: schedule.date.toISOString().split("T")[0],
           startTime: schedule.startTime,
           endTime: schedule.endTime || schedule.startTime,
           lateAfter: schedule.lateAfter,
@@ -313,16 +322,18 @@ export default function QRPage() {
                       <label className="text-xs text-gray-500 mb-1">
                         วันที่
                       </label>
-                      <input
-                        type="date"
-                        value={schedule.date}
-                        onChange={(e) =>
+                      <DatePicker
+                        selected={schedule.date}
+                        onChange={(date: Date | null) =>
                           setSchedule({
                             ...schedule,
-                            date: e.target.value,
+                            date: date || new Date(),
                           })
                         }
-                        className="border border-gray-200 rounded-lg px-3 py-2 w-[250px] focus:outline-none focus:ring-2 focus:ring-blue-400"
+                        dateFormat="dd/MM/yyyy"
+                        className="w-full h-[46px] rounded-xl border border-gray-200 bg-white pl-11 pr-4 text-sm text-gray-700 shadow-sm transition focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+                        calendarClassName="rounded-2xl border border-gray-200 shadow-2xl overflow-hidden"
+                        popperClassName="z-50"
                       />
                     </div>
 

@@ -14,11 +14,22 @@ export async function DELETE(req: Request) {
       );
     }
 
+    if (!ObjectId.isValid(id)) {
+      return NextResponse.json(
+        { success: false, message: "รูปแบบ id ไม่ถูกต้อง" },
+        { status: 400 }
+      );
+    }
+
     const client = await clientPromise;
     const db = client.db("attendance");
     const classes = db.collection("classes");
 
-    const existing = await classes.findOne({ _id: new ObjectId(id) });
+    const objectId = new ObjectId(id);
+
+    const existing = await classes.findOne({
+      _id: objectId,
+    });
 
     if (!existing) {
       return NextResponse.json(
@@ -27,15 +38,22 @@ export async function DELETE(req: Request) {
       );
     }
 
-    await classes.deleteOne({ _id: new ObjectId(id) });
+    await classes.deleteOne({
+      _id: objectId,
+    });
 
     return NextResponse.json({
       success: true,
       message: "ลบรายวิชาสำเร็จ",
     });
-  } catch (error) {
+  } catch (error: unknown) {
+    console.error("DELETE CLASS ERROR:", error);
+
     return NextResponse.json(
-      { success: false, message: (error as Error).message },
+      {
+        success: false,
+        message: error instanceof Error ? error.message : "Unknown error",
+      },
       { status: 500 }
     );
   }

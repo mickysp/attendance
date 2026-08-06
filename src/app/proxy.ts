@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { jwtVerify } from "jose";
 
-const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+const jwtSecret = process.env.JWT_SECRET;
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const token = req.cookies.get("token")?.value;
-  const url = req.nextUrl.pathname;
+  const pathname = req.nextUrl.pathname;
 
   const publicPaths = [
     "/login",
@@ -14,74 +14,74 @@ export async function middleware(req: NextRequest) {
     "/forgot-password",
   ];
 
+  if (!jwtSecret) {
+    console.error("JWT_SECRET is not configured");
+    return NextResponse.next();
+  }
+
   if (
-    url.startsWith("/_next") ||
-    url.startsWith("/api") ||
-    url.includes(".")
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/api") ||
+    pathname.includes(".")
   ) {
     return NextResponse.next();
   }
 
   if (!token) {
-    if (publicPaths.includes(url)) {
+    if (publicPaths.includes(pathname)) {
       return NextResponse.next();
     }
 
-    return NextResponse.redirect(
-      new URL("/login", req.url)
-    );
+    return NextResponse.redirect(new URL("/login", req.url));
   }
 
   try {
+    const secret = new TextEncoder().encode(jwtSecret);
     const { payload } = await jwtVerify(token, secret);
 
-    const role = payload.role as string;
+    const role = payload.role as string | undefined;
 
-    if (url === "/login") {
+    if (pathname === "/login") {
       if (role === "Teacher") {
         return NextResponse.redirect(
-          new URL("/dashboard", req.url)
+          new URL("/dashboard", req.url),
         );
       }
 
       if (role === "Teaching Assistant") {
         return NextResponse.redirect(
-          new URL("/attendance", req.url)
+          new URL("/attendance", req.url),
         );
       }
 
-      return NextResponse.redirect(
-        new URL("/", req.url)
-      );
+      return NextResponse.redirect(new URL("/", req.url));
     }
 
     if (
-      url.startsWith("/dashboard") &&
+      pathname.startsWith("/dashboard") &&
       role === "Teaching Assistant"
     ) {
       return NextResponse.redirect(
-        new URL("/attendance", req.url)
+        new URL("/attendance", req.url),
       );
     }
 
     if (
-      url.startsWith("/attendance") &&
+      pathname.startsWith("/attendance") &&
       role !== "Teacher" &&
       role !== "Teaching Assistant"
     ) {
       return NextResponse.redirect(
-        new URL("/dashboard", req.url)
+        new URL("/dashboard", req.url),
       );
     }
 
     return NextResponse.next();
-
   } catch (error) {
-
     console.error("JWT VERIFY ERROR:", error);
 
     const response = NextResponse.redirect(
-      new URL("/login", req.url)
+      new URL("/login", req.url),
     );
 
     response.cookies.delete("token");

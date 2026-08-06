@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { Prompt, Sarabun, Noto_Sans_Thai } from "next/font/google";
 import { AlertProvider } from "@/context/AlertContext";
 import { ConfirmProvider } from "@/context/ConfirmContext";
-import "./globals.css";
+import "@/styles/global.css";
 
 const prompt = Prompt({
   subsets: ["thai", "latin"],

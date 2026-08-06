@@ -1,0 +1,233 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  --primary: #3085fe;
+  --primary-hover: #227bf8;
+  --input-border: #d4d4d8;
+  --input-border-hover: #c1c1c5;
+  --navbar-font: #0e69e9;
+  --card: #f9fbfc;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+@keyframes progressBar {
+  0% {
+    width: 100%;
+  }
+  100% {
+    width: 0%;
+  }
+}
+
+.animate-progress {
+  animation: progressBar 3s linear forwards;
+}
+
+@keyframes scaleIn {
+  from {
+    transform: scale(0.95);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+body {
+  background: #ffffff !important;
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.font-prompt {
+  font-family: var(--font-prompt);
+}
+
+.font-sarabun {
+  font-family: var(--font-sarabun);
+}
+
+.font-noto {
+  font-family: var(--font-noto);
+}
+
+/* ---------- form global style ---------- */
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  outline: none;
+}
+
+.form-input-card {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--input-border);
+  border-radius: 8px;
+  outline: none;
+  background-color: white;
+}
+
+.form-button {
+  width: 100%;
+  padding: 8px;
+  background: var(--primary);
+  color: white;
+  border-radius: 8px;
+  transition: 0.2s;
+  cursor: pointer;
+}
+
+.form-button:hover {
+  background: var(--primary-hover);
+}
+
+/* =========================
+   React Datepicker Premium
+========================= */
+
+.react-datepicker {
+  border: none !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  background: rgba(255, 255, 255, 0.96) !important;
+  backdrop-filter: blur(12px) !important;
+  font-family: inherit !important;
+  padding: 10px !important;
+
+  box-shadow:
+    0 20px 40px rgba(15, 23, 42, 0.12),
+    0 8px 18px rgba(15, 23, 42, 0.08) !important;
+}
+
+/* Header */
+
+.react-datepicker__header {
+  background: transparent !important;
+  border-bottom: none !important;
+  padding-top: 6px !important;
+  padding-bottom: 12px !important;
+}
+
+.react-datepicker__current-month {
+  font-size: 16px !important;
+  font-weight: 700 !important;
+  color: #111827 !important;
+  margin-bottom: 12px !important;
+}
+
+/* Weekday */
+
+.react-datepicker__day-name {
+  width: 2.4rem !important;
+  line-height: 2.4rem !important;
+
+  color: #94a3b8 !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+
+/* Day */
+
+.react-datepicker__day {
+  width: 2.4rem !important;
+  line-height: 2.4rem !important;
+  margin: 0.2rem !important;
+
+  border-radius: 14px !important;
+
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: #1e293b !important;
+
+  transition:
+    all 0.18s ease,
+    transform 0.12s ease !important;
+}
+
+/* Hover */
+
+.react-datepicker__day:hover {
+  background: #eff6ff !important;
+  color: #2563eb !important;
+  transform: scale(1.08);
+}
+
+/* Selected */
+
+.react-datepicker__day--selected,
+.react-datepicker__day--keyboard-selected {
+  background: linear-gradient(
+    135deg,
+    #3b82f6,
+    #2563eb
+  ) !important;
+
+  color: white !important;
+  font-weight: 700 !important;
+
+  box-shadow:
+    0 6px 14px rgba(37, 99, 235, 0.35) !important;
+}
+
+/* Today */
+
+.react-datepicker__day--today {
+  background: #f8fafc !important;
+  border: 1px solid #dbeafe !important;
+  font-weight: 700 !important;
+  color: #2563eb !important;
+}
+
+/* Outside month */
+
+.react-datepicker__day--outside-month {
+  color: #cbd5e1 !important;
+}
+
+/* Navigation */
+
+.react-datepicker__navigation {
+  top: 16px !important;
+}
+
+.react-datepicker__navigation-icon::before {
+  border-color: #64748b !important;
+  border-width: 2px 2px 0 0 !important;
+  height: 8px !important;
+  width: 8px !important;
+}
+
+/* Triangle */
+
+.react-datepicker__triangle {
+  display: none !important;
+}
+
+/* Popper */
+
+.react-datepicker-popper {
+  z-index: 9999 !important;
+}
+
+.react-datepicker__month-container {
+  padding: 8px !important;
+}
