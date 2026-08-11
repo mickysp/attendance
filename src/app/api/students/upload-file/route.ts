@@ -1,154 +1,81 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { ObjectId, Document } from "mongodb";
+import { ObjectId } from "mongodb";
 import * as XLSX from "xlsx";
+
+import type {
+  ExcelRow,
+  StudentDocument,
+  StudentClassDocument,
+  StudentResultItem,
+  StudentImportErrorItem,
+  MajorDocument,
+  IncomingStudent
+} from "@/types/students";
+
+import type { ClassDocument } from "@/types/classes";
 
 export const runtime = "nodejs";
 
-type ExcelRow = Record<
-  string,
-  string | number | undefined
->;
-
-type ClassDoc = Document & {
-  _id: ObjectId;
-  name?: string;
-  class_name?: string;
-  className?: string;
-  courseName?: string;
-};
-
-type MajorDoc = Document & {
-  _id: ObjectId;
-  name: string;
-};
-
-type StudentDoc = {
-  _id?: ObjectId;
-  studentId: string;
-  fullName: string;
-  email?: string;
-  section: string;
-  major: string;
-  academicYear: number;
-  createdAt: Date;
-};
-
-type StudentClassDoc = {
-  studentId: ObjectId;
-  classId?: ObjectId;
-  className: string;
-  section?: string;
-  academicYear?: number;
-  createdAt?: Date;
-};
-
-type ResultItem = {
-  studentId: string;
-  fullName: string;
-  email?: string;
-  section: string;
-  major: string;
-  className: string;
-  status: "created" | "duplicate";
-  relation: "added" | "exists";
-};
-
-type ErrorItem = {
-  student?: {
-    studentId?: string;
-    fullName?: string;
-    email?: string;
-  };
-  message: string;
-};
-
-const normalize = (
-  text: unknown,
-): string =>
+const normalize = (text: unknown): string =>
   String(text || "")
     .trim()
     .toLowerCase()
     .replace(/\s+/g, " ");
 
-const getClassName = (
-  c: ClassDoc,
-): string =>
-  c.name ||
-  c.class_name ||
-  c.className ||
-  c.courseName ||
-  "";
+const getClassName = (c: ClassDocument): string => {
+  return c.className || "";
+};
 
-const getString = (
-  v: unknown,
-): string =>
-  typeof v === "string" ||
-  typeof v === "number"
-    ? String(v).trim()
+const getString = (value: unknown): string => {
+  return typeof value === "string" || typeof value === "number"
+    ? String(value).trim()
     : "";
+};
 
-const getAcademicYear = () =>
-  new Date().getFullYear() + 543;
+const getAcademicYear = (): number => {
+  return new Date().getFullYear() + 543;
+};
 
-const isValidStudentId = (
-  id: string,
-) => /^\d{9}-\d$/.test(id);
+const isValidStudentId = (id: string): boolean => {
+  return /^\d{9}-\d$/.test(id);
+};
 
-const isValidName = (
-  name: string,
-) => /^(นาย|นาง|นางสาว)/.test(name);
+const isValidName = (name: string): boolean => {
+  return /^(นาย|นาง|นางสาว)/.test(name);
+};
 
-const isValidEmail = (
-  email: string,
-) =>
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
-    email,
-  );
+const isValidEmail = (email: string): boolean => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
 
-export async function POST(
-  req: Request,
-) {
+export async function POST(req: Request) {
   try {
-    const formData =
-      await req.formData();
+    const formData = await req.formData();
 
-    const file = formData.get(
-      "file",
-    ) as File;
+    const file = formData.get("file");
 
-    const classId = String(
-      formData.get("classId"),
-    );
+    const classId = String(formData.get("classId") ?? "");
 
-    const section = String(
-      formData.get("section"),
-    );
+    const section = String(formData.get("section") ?? "");
 
-    const majorInput = String(
-      formData.get("major"),
-    ).trim();
+    const majorInput = String(formData.get("major") ?? "").trim();
 
-    if (!file) {
+    if (!(file instanceof File)) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            "กรุณาอัปโหลดไฟล์",
+          message: "กรุณาอัปโหลดไฟล์",
         },
         { status: 400 },
       );
     }
 
-    if (
-      !classId ||
-      !ObjectId.isValid(classId)
-    ) {
+    if (!classId || !ObjectId.isValid(classId)) {
       return NextResponse.json(
         {
           success: false,
-          message:
-            "classId ไม่ถูกต้อง",
+          message: "classId ไม่ถูกต้อง",
         },
         { status: 400 },
       );
@@ -158,8 +85,7 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          message:
-            "กรุณาเลือก Section",
+          message: "กรุณาเลือก Section",
         },
         { status: 400 },
       );
@@ -169,45 +95,29 @@ export async function POST(
       return NextResponse.json(
         {
           success: false,
-          message:
-            "กรุณาระบุสาขา",
+          message: "กรุณาระบุสาขา",
         },
         { status: 400 },
       );
     }
-    const client =
-      await clientPromise;
 
-    const db =
-      client.db("attendance");
+    const client = await clientPromise;
+    const db = client.db("attendance");
 
-    const studentsCol =
-      db.collection<StudentDoc>(
-        "students",
-      );
+    const studentsCol = db.collection<StudentDocument>("students");
 
     const studentClassesCol =
-      db.collection<StudentClassDoc>(
-        "student_classes",
-      );
+      db.collection<StudentClassDocument>("student_classes");
 
-    const classesCol =
-      db.collection<ClassDoc>(
-        "classes",
-      );
+    const classesCol = db.collection<ClassDocument>("classes");
 
-    const majorsCol =
-      db.collection<MajorDoc>(
-        "majors",
-      );
+    const majorsCol = db.collection<MajorDocument>("majors");
 
-    const classObjectId =
-      new ObjectId(classId);
+    const classObjectId = new ObjectId(classId);
 
-    const classData =
-      await classesCol.findOne({
-        _id: classObjectId,
-      });
+    const classData = await classesCol.findOne({
+      _id: classObjectId,
+    });
 
     if (!classData) {
       return NextResponse.json(
@@ -219,16 +129,22 @@ export async function POST(
       );
     }
 
-    const className =
-      getClassName(classData);
+    const className = getClassName(classData);
 
-    const majors =
-      await majorsCol.find().toArray();
+    if (!className) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "ไม่พบชื่อวิชา",
+        },
+        { status: 400 },
+      );
+    }
 
-    const major = majors.find((m) =>
-      normalize(m.name).includes(
-        normalize(majorInput),
-      ),
+    const majors = await majorsCol.find({}).toArray();
+
+    const major = majors.find((item) =>
+      normalize(item.name).includes(normalize(majorInput)),
     );
 
     if (!major) {
@@ -241,68 +157,74 @@ export async function POST(
       );
     }
 
-    const workbook = XLSX.read(
-      Buffer.from(
-        await file.arrayBuffer(),
-      ),
-    );
+    const workbook = XLSX.read(Buffer.from(await file.arrayBuffer()));
 
-    const sheet =
-      workbook.Sheets[
-        workbook.SheetNames[0]
-      ];
-
-    const rows =
-      XLSX.utils.sheet_to_json<ExcelRow>(
-        sheet,
+    if (workbook.SheetNames.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "ไม่พบ Sheet ในไฟล์ Excel",
+        },
+        { status: 400 },
       );
+    }
 
-    const academicYear =
-      getAcademicYear();
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
+    if (!sheet) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "ไม่สามารถอ่าน Sheet ได้",
+        },
+        { status: 400 },
+      );
+    }
 
-    const parsed: StudentDoc[] = [];
+    const rows = XLSX.utils.sheet_to_json<ExcelRow>(sheet);
 
-    const errors: ErrorItem[] = [];
+    if (rows.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "ไม่พบข้อมูลในไฟล์ Excel",
+        },
+        { status: 400 },
+      );
+    }
+
+    const academicYear = getAcademicYear();
+
+    const parsed: StudentDocument[] = [];
+
+    const errors: StudentImportErrorItem[] = [];
 
     rows.forEach((row) => {
-      const studentId = getString(
-        row["รหัสนักศึกษา"],
-      );
+      const studentId = getString(row["รหัสนักศึกษา"]);
 
-      const fullName = getString(
-        row["ชื่อ-นามสกุล"],
-      );
+      const fullName = getString(row["ชื่อ-นามสกุล"]);
 
-      const email =
-        getString(row["email"]) ||
-        getString(row["อีเมล"]) ||
-        "";
+      const email = getString(row["email"]) || getString(row["อีเมล"]) || "";
+
+      const student: IncomingStudent = {
+        studentId,
+        fullName,
+        email: email || undefined,
+      };
 
       if (!studentId || !fullName) {
         errors.push({
-          student: {
-            studentId,
-            fullName,
-            email,
-          },
+          student,
           message: "ข้อมูลไม่ครบ",
         });
 
         return;
       }
 
-      if (
-        !isValidStudentId(studentId)
-      ) {
+      if (!isValidStudentId(studentId)) {
         errors.push({
-          student: {
-            studentId,
-            fullName,
-            email,
-          },
-          message:
-            "studentId ไม่ถูกต้อง",
+          student,
+          message: "studentId ไม่ถูกต้อง",
         });
 
         return;
@@ -310,29 +232,17 @@ export async function POST(
 
       if (!isValidName(fullName)) {
         errors.push({
-          student: {
-            studentId,
-            fullName,
-            email,
-          },
+          student,
           message: "ชื่อไม่ถูกต้อง",
         });
 
         return;
       }
 
-      if (
-        email &&
-        !isValidEmail(email)
-      ) {
+      if (email && !isValidEmail(email)) {
         errors.push({
-          student: {
-            studentId,
-            fullName,
-            email,
-          },
-          message:
-            "email ไม่ถูกต้อง",
+          student,
+          message: "email ไม่ถูกต้อง",
         });
 
         return;
@@ -341,8 +251,7 @@ export async function POST(
       parsed.push({
         studentId,
         fullName,
-        email:
-          email || undefined,
+        email: email || undefined,
         section,
         major: major.name,
         academicYear,
@@ -350,16 +259,33 @@ export async function POST(
       });
     });
 
+    if (parsed.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "ไม่พบข้อมูลนักศึกษาที่ถูกต้อง",
+          summary: {
+            total: 0,
+            added: 0,
+            exists: 0,
+            errors: errors.length,
+          },
+          details: [],
+          errors,
+        },
+        { status: 400 },
+      );
+    }
+
     await Promise.all(
-      parsed.map((s) =>
+      parsed.map((student) =>
         studentsCol.updateOne(
           {
-            studentId:
-              s.studentId,
+            studentId: student.studentId,
             academicYear,
           },
           {
-            $setOnInsert: s,
+            $setOnInsert: student,
           },
           {
             upsert: true,
@@ -368,63 +294,52 @@ export async function POST(
       ),
     );
 
-    const ids = parsed.map(
-      (s) => s.studentId,
+    const ids = parsed.map((student) => student.studentId);
+
+    const allStudents = await studentsCol
+      .find({
+        studentId: {
+          $in: ids,
+        },
+        academicYear,
+      })
+      .toArray();
+
+    const idMap = new Map<string, ObjectId>(
+      allStudents.map((student) => [student.studentId, student._id!]),
     );
 
-    const allStudents =
-      await studentsCol
-        .find({
-          studentId: {
-            $in: ids,
+    const details: StudentResultItem[] = [];
+
+    for (const student of parsed) {
+      const studentObjectId = idMap.get(student.studentId);
+
+      if (!studentObjectId) {
+        continue;
+      }
+
+      const exists = await studentClassesCol.findOne({
+        studentId: studentObjectId,
+
+        $or: [
+          {
+            classId: classObjectId,
+            section,
           },
-          academicYear,
-        })
-        .toArray();
-
-    const idMap = new Map<
-      string,
-      ObjectId
-    >(
-      allStudents.map((s) => [
-        s.studentId,
-        s._id!,
-      ]),
-    );
-
-    const details: ResultItem[] = [];
-
-    for (const s of parsed) {
-      const sid = idMap.get(
-        s.studentId,
-      );
-
-      if (!sid) continue;
-
-      const exists =
-        await studentClassesCol.findOne({
-          studentId: sid,
-
-          $or: [
-            {
-              classId:
-                classObjectId,
-              section,
-            },
-            {
-              className,
-              section,
-            },
-          ],
-        });
+          {
+            className,
+            section,
+          },
+        ],
+      });
 
       if (exists) {
         details.push({
-          studentId: s.studentId,
-          fullName: s.fullName,
-          email: s.email,
-          section: s.section,
-          major: s.major,
+          studentId: student.studentId,
+          fullName: student.fullName,
+          email: student.email,
+          section: student.section,
+          major: student.major,
           className,
           status: "duplicate",
           relation: "exists",
@@ -433,9 +348,8 @@ export async function POST(
         continue;
       }
 
-
       await studentClassesCol.insertOne({
-        studentId: sid,
+        studentId: studentObjectId,
         classId: classObjectId,
         className,
         section,
@@ -444,54 +358,44 @@ export async function POST(
       });
 
       details.push({
-        studentId: s.studentId,
-        fullName: s.fullName,
-        email: s.email,
-        section: s.section,
-        major: s.major,
+        studentId: student.studentId,
+        fullName: student.fullName,
+        email: student.email,
+        section: student.section,
+        major: student.major,
         className,
         status: "created",
         relation: "added",
       });
     }
 
-    return NextResponse.json({
-      success: true,
-      message:
-        "นำเข้าข้อมูลสำเร็จ",
+    return NextResponse.json(
+      {
+        success: true,
+        message: "นำเข้าข้อมูลสำเร็จ",
 
-      summary: {
-        total: parsed.length,
+        summary: {
+          total: parsed.length,
+          added: details.filter((item) => item.relation === "added").length,
+          exists: details.filter((item) => item.relation === "exists").length,
+          errors: errors.length,
+        },
 
-        added: details.filter(
-          (d) =>
-            d.relation === "added",
-        ).length,
+        details,
 
-        exists: details.filter(
-          (d) =>
-            d.relation === "exists",
-        ).length,
-
-        errors: errors.length,
+        errors,
       },
-
-      details,
-
-      errors,
-    });
-  } catch (err) {
-    console.error(
-      "IMPORT STUDENTS ERROR:",
-      err,
+      { status: 200 },
     );
+  } catch (error: unknown) {
+    console.error("IMPORT STUDENTS ERROR:", error);
 
-    return NextResponse.json({
-      success: false,
-      message:
-        err instanceof Error
-          ? err.message
-          : "error",
-    });
+    return NextResponse.json(
+      {
+        success: false,
+        message: error instanceof Error ? error.message : "เกิดข้อผิดพลาด",
+      },
+      { status: 500 },
+    );
   }
 }

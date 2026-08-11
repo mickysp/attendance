@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import type { StudentDocument, StudentClassDocument } from "@/types/students";
 
 export async function DELETE(req: Request) {
   try {
@@ -9,25 +10,35 @@ export async function DELETE(req: Request) {
 
     if (!id || !ObjectId.isValid(id)) {
       return NextResponse.json(
-        { success: false, message: "id ไม่ถูกต้อง" },
-        { status: 400 }
+        {
+          success: false,
+          message: "id ไม่ถูกต้อง",
+        },
+        { status: 400 },
       );
     }
 
     const client = await clientPromise;
     const db = client.db("attendance");
 
-    const studentsCol = db.collection("students");
-    const studentClassesCol = db.collection("student_classes");
+    const studentsCol = db.collection<StudentDocument>("students");
+
+    const studentClassesCol =
+      db.collection<StudentClassDocument>("student_classes");
 
     const objectId = new ObjectId(id);
 
-    const student = await studentsCol.findOne({ _id: objectId });
+    const student = await studentsCol.findOne({
+      _id: objectId,
+    });
 
     if (!student) {
       return NextResponse.json(
-        { success: false, message: "ไม่พบข้อมูลนักศึกษา" },
-        { status: 404 }
+        {
+          success: false,
+          message: "ไม่พบข้อมูลนักศึกษา",
+        },
+        { status: 404 },
       );
     }
 
@@ -39,23 +50,26 @@ export async function DELETE(req: Request) {
       _id: objectId,
     });
 
-    return NextResponse.json({
-      success: true,
-      message: "ลบนักศึกษาออกจากระบบสำเร็จ",
-      debug: {
-        deletedClasses: deleteClassesResult.deletedCount,
-        deletedStudent: deleteStudentResult.deletedCount,
+    return NextResponse.json(
+      {
+        success: true,
+        message: "ลบนักศึกษาออกจากระบบสำเร็จ",
+        debug: {
+          deletedClasses: deleteClassesResult.deletedCount,
+          deletedStudent: deleteStudentResult.deletedCount,
+        },
       },
-    });
-
+      { status: 200 },
+    );
   } catch (error: unknown) {
+    console.error("DELETE STUDENT ERROR:", error);
+
     return NextResponse.json(
       {
         success: false,
-        message:
-          error instanceof Error ? error.message : "Unknown error",
+        message: error instanceof Error ? error.message : "เกิดข้อผิดพลาด",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,18 +1,20 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
+import type { ResetPasswordBody } from "@/types/auth";
+import type { User } from "@/types/auth";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const identifier = (body.identifier || "").toLowerCase().trim();
-    const otp = body.otp;
-    const newPassword = body.newPassword;
+    const { identifier, otp, newPassword }: ResetPasswordBody =
+      await req.json();
+
+    const normalizedIdentifier = identifier.trim().toLowerCase();
 
     if (!identifier || !otp || !newPassword) {
       return NextResponse.json(
         { success: false, message: "กรอกข้อมูลไม่ครบ" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -26,17 +28,20 @@ export async function POST(req: Request) {
     const client = await clientPromise;
     const db = client.db("attendance");
 
-    const users = db.collection("users");
+    const users = db.collection<User>("users");
     const resets = db.collection("password_resets");
 
     const user = await users.findOne({
-      $or: [{ email: identifier }, { username: identifier }],
+      $or: [
+        { email: normalizedIdentifier },
+        { username: normalizedIdentifier },
+      ],
     });
 
     if (!user) {
       return NextResponse.json(
         { success: false, message: "ไม่พบบัญชี" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -58,7 +63,7 @@ export async function POST(req: Request) {
 
     await users.updateOne(
       { _id: user._id },
-      { $set: { password: hashedPassword } }
+      { $set: { password: hashedPassword } },
     );
 
     await resets.deleteMany({ userId: user._id });
@@ -71,7 +76,7 @@ export async function POST(req: Request) {
     console.error(error);
     return NextResponse.json(
       { success: false, message: "เกิดข้อผิดพลาด" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

@@ -1,58 +1,28 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
-
-type Branch = {
-  _id: string;
-  name: string;
-};
-
-type Teacher = {
-  _id: string;
-  name: string;
-};
-
-type IncomingClassCode = {
-  code?: string;
-  branchIds?: string[];
-};
-
-type ClassCodePayload = {
-  code: string;
-  branches: Branch[];
-};
-
-type IncomingClass = {
-  className?: string;
-  classCodes?: IncomingClassCode[];
-  teacherId?: string;
-  description?: string;
-};
-
-type ClassPayload = {
-  className: string;
-  classCodes: ClassCodePayload[];
-  description?: string;
-  teacher?: Teacher;
-  createdAt: Date;
-};
+import type {
+  Branch,
+  Teacher,
+  IncomingClass,
+  ClassCodePayload,
+  ClassDocument,
+} from "@/types/classes";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const body: IncomingClass | IncomingClass[] = await req.json();
 
-    const classList: IncomingClass[] = Array.isArray(body)
-      ? body
-      : [body];
+    const classList: IncomingClass[] = Array.isArray(body) ? body : [body];
 
     const client = await clientPromise;
     const db = client.db("attendance");
 
-    const classes = db.collection<ClassPayload>("classes");
+    const classes = db.collection<ClassDocument>("classes");
     const majors = db.collection("majors");
     const teachersCol = db.collection("teachers");
 
-    const insertData: ClassPayload[] = [];
+    const insertData: ClassDocument[] = [];
 
     for (const item of classList) {
       const { className, classCodes, teacherId, description } = item;
@@ -63,7 +33,7 @@ export async function POST(req: Request) {
             success: false,
             message: "มีบางรายการไม่ได้กรอกชื่อวิชา",
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -73,7 +43,7 @@ export async function POST(req: Request) {
             success: false,
             message: `วิชา ${className} ต้องมีอย่างน้อย 1 รหัสวิชา`,
           },
-          { status: 400 }
+          { status: 400 },
         );
       }
 
@@ -81,6 +51,7 @@ export async function POST(req: Request) {
 
       for (const classCodeItem of classCodes) {
         const code = classCodeItem.code?.trim();
+        const section = Number(classCodeItem.section);
 
         if (!code) {
           return NextResponse.json(
@@ -88,7 +59,17 @@ export async function POST(req: Request) {
               success: false,
               message: `วิชา ${className} มีบางรายการไม่ได้กรอกรหัสวิชา`,
             },
-            { status: 400 }
+            { status: 400 },
+          );
+        }
+
+        if (!Number.isInteger(section) || section <= 0) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: `Section ของรหัสวิชา ${code} ไม่ถูกต้อง`,
+            },
+            { status: 400 },
           );
         }
 
@@ -98,12 +79,12 @@ export async function POST(req: Request) {
               success: false,
               message: `รหัสวิชา ${code} ต้องมีอย่างน้อย 1 สาขา`,
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
         const duplicateInRequest = normalizedClassCodes.some(
-          (item) => item.code === code
+          (item) => item.code === code && item.section === section,
         );
 
         if (duplicateInRequest) {
@@ -112,30 +93,33 @@ export async function POST(req: Request) {
               success: false,
               message: `รหัสวิชา ${code} ซ้ำกันในรายการที่ส่งมา`,
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
         const existing = await classes.findOne({
-          "classCodes.code": code,
+          classCodes: {
+            $elemMatch: {
+              code,
+              section,
+            },
+          },
         });
 
         if (existing) {
           return NextResponse.json(
             {
               success: false,
-              message: `รหัสวิชา ${code} มีอยู่แล้ว`,
+              message: `รหัสวิชา ${code} Section ${section} มีอยู่แล้ว`,
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
-        const uniqueBranchIds = Array.from(
-          new Set(classCodeItem.branchIds)
-        );
+        const uniqueBranchIds = Array.from(new Set(classCodeItem.branchIds));
 
         const invalidBranchId = uniqueBranchIds.find(
-          (branchId) => !ObjectId.isValid(branchId)
+          (branchId) => !ObjectId.isValid(branchId),
         );
 
         if (invalidBranchId) {
@@ -144,12 +128,12 @@ export async function POST(req: Request) {
               success: false,
               message: `รูปแบบรหัสสาขาไม่ถูกต้อง: ${invalidBranchId}`,
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
         const branchObjectIds = uniqueBranchIds.map(
-          (branchId) => new ObjectId(branchId)
+          (branchId) => new ObjectId(branchId),
         );
 
         const foundMajors = await majors
@@ -166,7 +150,7 @@ export async function POST(req: Request) {
               success: false,
               message: `พบสาขาไม่ครบสำหรับรหัสวิชา ${code}`,
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
@@ -177,6 +161,7 @@ export async function POST(req: Request) {
 
         normalizedClassCodes.push({
           code,
+          section,
           branches: normalizedBranches,
         });
       }
@@ -190,7 +175,7 @@ export async function POST(req: Request) {
               success: false,
               message: "รูปแบบรหัสอาจารย์ไม่ถูกต้อง",
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
@@ -204,7 +189,7 @@ export async function POST(req: Request) {
               success: false,
               message: "ไม่พบอาจารย์",
             },
-            { status: 400 }
+            { status: 400 },
           );
         }
 
@@ -214,7 +199,7 @@ export async function POST(req: Request) {
         };
       }
 
-      const newClass: ClassPayload = {
+      const newClass: ClassDocument = {
         className: className.trim(),
         classCodes: normalizedClassCodes,
         createdAt: new Date(),
@@ -239,7 +224,7 @@ export async function POST(req: Request) {
         message: `สร้างรายวิชาสำเร็จ ${result.insertedCount} รายการ`,
         data: insertData,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error: unknown) {
     console.error("CREATE CLASS ERROR:", error);
@@ -249,7 +234,7 @@ export async function POST(req: Request) {
         success: false,
         message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

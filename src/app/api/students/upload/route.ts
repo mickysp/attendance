@@ -1,103 +1,44 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
-import { ObjectId, Document } from "mongodb";
+import { ObjectId } from "mongodb";
 
-type IncomingStudent = {
-  studentId?: string;
-  fullName?: string;
-  email?: string;
+import type {
+  UploadStudentsBody,
+  StudentDocument,
+  StudentClassDocument,
+  StudentResultItem,
+  StudentErrorItem,
+  MajorDocument,
+} from "@/types/students";
+
+import type { ClassDocument } from "@/types/classes";
+
+type ClassDocumentWithId = ClassDocument & {
+  _id: ObjectId;
 };
 
-type UploadPayload = {
-  classId?: string;
-  section?: string;
-  major?: string;
-  students?: IncomingStudent[];
-};
+const isValidStudentId = (id: string) => /^\d{9}-\d$/.test(id);
 
-type StudentDoc = {
-  _id?: ObjectId;
-  studentId: string;
-  fullName: string;
-  email?: string;
-  section: string;
-  major: string;
-  academicYear: number;
-  createdAt: Date;
-};
-
-type StudentClassDoc = {
-  studentId: ObjectId;
-  classId?: ObjectId;
-  className: string;
-  section: string;
-  academicYear?: number;
-  createdAt?: Date;
-};
-
-type ResultItem = {
-  studentId: string;
-  fullName: string;
-  email?: string;
-  section: string;
-  major: string;
-  className: string;
-  status: "created" | "duplicate";
-  relation: "added" | "exists";
-};
-
-type ErrorItem = {
-  student?: IncomingStudent;
-  message: string;
-};
-
-type ClassDoc = Document & {
-  name?: string;
-  className?: string;
-  class_name?: string;
-  courseName?: string;
-};
-
-type MajorDoc = Document & {
-  name: string;
-};
-
-const isValidStudentId = (id: string) =>
-  /^\d{9}-\d$/.test(id);
-
-const isValidName = (name: string) =>
-  /^(นาย|นาง|นางสาว)/.test(name);
+const isValidName = (name: string) => /^(นาย|นาง|นางสาว)/.test(name);
 
 const isValidEmail = (email: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
-const getAcademicYear = () =>
-  new Date().getFullYear() + 543;
+const getAcademicYear = () => new Date().getFullYear() + 543;
 
 export async function POST(req: Request) {
   try {
-    const body: UploadPayload =
-      await req.json();
+    const body: UploadStudentsBody = await req.json();
 
-    const {
-      classId,
-      section,
-      major,
-      students,
-    } = body;
+    const { classId, section, major, students } = body;
 
-    if (
-      !classId ||
-      !ObjectId.isValid(classId)
-    ) {
+    if (!classId || !ObjectId.isValid(classId)) {
       return NextResponse.json(
         {
           success: false,
           message: "classId ไม่ถูกต้อง",
         },
-        {
-          status: 400,
-        },
+        { status: 400 },
       );
     }
 
@@ -107,9 +48,7 @@ export async function POST(req: Request) {
           success: false,
           message: "กรุณาเลือก Section",
         },
-        {
-          status: 400,
-        },
+        { status: 400 },
       );
     }
 
@@ -119,52 +58,37 @@ export async function POST(req: Request) {
           success: false,
           message: "กรุณาระบุสาขา",
         },
-        {
-          status: 400,
-        },
+        { status: 400 },
       );
     }
 
-    if (
-      !students ||
-      students.length === 0
-    ) {
+    if (!students || students.length === 0) {
       return NextResponse.json(
         {
           success: false,
           message: "ไม่มีข้อมูลนักศึกษา",
         },
-        {
-          status: 400,
-        },
+        { status: 400 },
       );
     }
 
     const client = await clientPromise;
-
     const db = client.db("attendance");
 
-    const studentsCol =
-      db.collection<StudentDoc>("students");
+    const studentsCol = db.collection<StudentDocument>("students");
 
     const studentClassesCol =
-      db.collection<StudentClassDoc>(
-        "student_classes",
-      );
+      db.collection<StudentClassDocument>("student_classes");
 
-    const classesCol =
-      db.collection<ClassDoc>("classes");
+    const classesCol = db.collection<ClassDocumentWithId>("classes");
 
-    const majorsCol =
-      db.collection<MajorDoc>("majors");
+    const majorsCol = db.collection<MajorDocument>("majors");
 
-    const classObjectId =
-      new ObjectId(classId);
+    const classObjectId = new ObjectId(classId);
 
-    const classData =
-      await classesCol.findOne({
-        _id: classObjectId,
-      });
+    const classData = await classesCol.findOne({
+      _id: classObjectId,
+    });
 
     if (!classData) {
       return NextResponse.json(
@@ -172,23 +96,15 @@ export async function POST(req: Request) {
           success: false,
           message: "ไม่พบวิชา",
         },
-        {
-          status: 404,
-        },
+        { status: 404 },
       );
     }
 
-    const className =
-      classData.name ||
-      classData.className ||
-      classData.class_name ||
-      classData.courseName ||
-      "";
+    const className = classData.className;
 
-    const majorExists =
-      await majorsCol.findOne({
-        name: major,
-      });
+    const majorExists = await majorsCol.findOne({
+      name: major,
+    });
 
     if (!majorExists) {
       return NextResponse.json(
@@ -196,44 +112,37 @@ export async function POST(req: Request) {
           success: false,
           message: "ไม่พบสาขา",
         },
-        {
-          status: 404,
-        },
+        { status: 404 },
       );
     }
 
-    const academicYear =
-      getAcademicYear();
+    const academicYear = getAcademicYear();
 
-    const parsed: StudentDoc[] = [];
 
-    const errors: ErrorItem[] = [];
+    const parsed: StudentDocument[] = [];
 
-    for (const s of students) {
-      const studentId =
-        s.studentId?.trim();
+    const errors: StudentErrorItem[] = [];
 
-      const fullName =
-        s.fullName?.trim();
+    for (const student of students) {
+      const studentId = student.studentId?.trim();
 
-      const email = s.email?.trim();
+      const fullName = student.fullName?.trim();
+
+      const email = student.email?.trim();
 
       if (!studentId || !fullName) {
         errors.push({
-          student: s,
+          student,
           message: "ข้อมูลไม่ครบ",
         });
 
         continue;
       }
 
-      if (
-        !isValidStudentId(studentId)
-      ) {
+      if (!isValidStudentId(studentId)) {
         errors.push({
-          student: s,
-          message:
-            "studentId ไม่ถูกต้อง",
+          student,
+          message: "studentId ไม่ถูกต้อง",
         });
 
         continue;
@@ -241,45 +150,47 @@ export async function POST(req: Request) {
 
       if (!isValidName(fullName)) {
         errors.push({
-          student: s,
+          student,
           message: "ชื่อไม่ถูกต้อง",
         });
 
         continue;
       }
 
-      if (
-        email &&
-        !isValidEmail(email)
-      ) {
+      if (email && !isValidEmail(email)) {
         errors.push({
-          student: s,
+          student,
           message: "email ไม่ถูกต้อง",
         });
 
         continue;
       }
 
-      parsed.push({
+      const studentData: StudentDocument = {
         studentId,
         fullName,
-        email,
         section,
         major,
         academicYear,
         createdAt: new Date(),
-      });
+      };
+
+      if (email) {
+        studentData.email = email;
+      }
+
+      parsed.push(studentData);
     }
 
     await Promise.all(
-      parsed.map((s) =>
+      parsed.map((student) =>
         studentsCol.updateOne(
           {
-            studentId: s.studentId,
+            studentId: student.studentId,
             academicYear,
           },
           {
-            $setOnInsert: s,
+            $setOnInsert: student,
           },
           {
             upsert: true,
@@ -288,42 +199,89 @@ export async function POST(req: Request) {
       ),
     );
 
-    const ids = parsed.map(
-      (s) => s.studentId,
+    const ids = parsed.map((student) => student.studentId);
+
+    const allStudents = await studentsCol
+      .find({
+        studentId: {
+          $in: ids,
+        },
+        academicYear,
+      })
+      .toArray();
+
+    const idMap = new Map<string, ObjectId>(
+      allStudents.map((student) => [student.studentId, student._id!]),
     );
 
-    const allStudents =
-      await studentsCol
-        .find({
-          studentId: {
-            $in: ids,
+    const details: StudentResultItem[] = [];
+
+    for (const student of parsed) {
+      const studentObjectId = idMap.get(student.studentId);
+
+      if (!studentObjectId) {
+        continue;
+      }
+
+      const exists = await studentClassesCol.findOne({
+        studentId: studentObjectId,
+
+        $or: [
+          {
+            classId: classObjectId,
+            section,
           },
-          academicYear,
-        })
-        .toArray();
+          {
+            className,
+            section,
+          },
+        ],
+      });
 
-    const idMap = new Map<
-      string,
-      ObjectId
-    >(
-      allStudents.map((s) => [
-        s.studentId,
-        s._id!,
-      ]),
-    );
+      if (exists) {
+        details.push({
+          studentId: student.studentId,
+          fullName: student.fullName,
+          email: student.email,
+          section: student.section,
+          major: student.major,
+          className,
+          status: "duplicate",
+          relation: "exists",
+        });
 
-    const details: ResultItem[] = [];
+        continue;
+      }
 
-    for (const s of parsed) {
-      const sid = idMap.get(
-        s.studentId,
-      );
+      await studentClassesCol.insertOne({
+        studentId: studentObjectId,
+        classId: classObjectId,
+        className,
+        section,
+        academicYear,
+        createdAt: new Date(),
+      });
 
-      if (!sid) continue;
+      details.push({
+        studentId: student.studentId,
+        fullName: student.fullName,
+        email: student.email,
+        section: student.section,
+        major: student.major,
+        className,
+        status: "created",
+        relation: "added",
+      });
 
-      const exists =
-        await studentClassesCol.findOne({
-          studentId: sid,
+      const duplicateName = await studentsCol.findOne({
+        fullName: student.fullName,
+
+        academicYear,
+      });
+
+      if (duplicateName) {
+        const hasSameClass = await studentClassesCol.findOne({
+          studentId: duplicateName._id!,
 
           $or: [
             {
@@ -337,73 +295,13 @@ export async function POST(req: Request) {
           ],
         });
 
-      if (exists) {
-        details.push({
-          studentId: s.studentId,
-          fullName: s.fullName,
-          email: s.email,
-          section: s.section,
-          major: s.major,
-          className,
-          status: "duplicate",
-          relation: "exists",
-        });
-
-        continue;
-      }
-
-      await studentClassesCol.insertOne({
-        studentId: sid,
-        classId: classObjectId,
-        className,
-        section,
-        academicYear,
-        createdAt: new Date(),
-      });
-
-      details.push({
-        studentId: s.studentId,
-        fullName: s.fullName,
-        email: s.email,
-        section: s.section,
-        major: s.major,
-        className,
-        status: "created",
-        relation: "added",
-      });
-
-      const duplicateName =
-        await studentsCol.findOne({
-          fullName: s.fullName,
-          academicYear,
-        });
-
-      if (duplicateName) {
-        const hasSameClass =
-          await studentClassesCol.findOne({
-            studentId:
-              duplicateName._id!,
-
-            $or: [
-              {
-                classId:
-                  classObjectId,
-                section,
-              },
-              {
-                className,
-                section,
-              },
-            ],
-          });
-
         if (hasSameClass) {
           details.push({
-            studentId: s.studentId,
-            fullName: s.fullName,
-            email: s.email,
-            section: s.section,
-            major: s.major,
+            studentId: student.studentId,
+            fullName: student.fullName,
+            email: student.email,
+            section: student.section,
+            major: student.major,
             className,
             status: "duplicate",
             relation: "exists",
@@ -412,39 +310,33 @@ export async function POST(req: Request) {
       }
     }
 
-    return NextResponse.json({
-      success: true,
+    return NextResponse.json(
+      {
+        success: true,
 
-      summary: {
-        total: parsed.length,
+        summary: {
+          total: parsed.length,
 
-        added: details.filter(
-          (d) =>
-            d.relation === "added",
-        ).length,
+          added: details.filter((item) => item.relation === "added").length,
 
-        exists: details.filter(
-          (d) =>
-            d.relation === "exists",
-        ).length,
+          exists: details.filter((item) => item.relation === "exists").length,
+        },
+
+        details,
+
+        errors,
       },
-
-      details,
-
-      errors,
-    });
-  } catch (error) {
-    console.error(
-      "UPLOAD STUDENTS ERROR:",
-      error,
+      { status: 200 },
     );
+  } catch (error) {
+    console.error("UPLOAD STUDENTS ERROR:", error);
 
-    return NextResponse.json({
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : "error",
-    });
+    return NextResponse.json(
+      {
+        success: false,
+        message: error instanceof Error ? error.message : "เกิดข้อผิดพลาด",
+      },
+      { status: 500 },
+    );
   }
 }

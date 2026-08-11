@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
+import type { RegisterBody } from "@/types/auth";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-
+    const body: RegisterBody = await req.json();
+    
     const { prefix, fullname, username, email, password, role } = body;
 
     if (!prefix || !fullname || !username || !email || !password || !role) {

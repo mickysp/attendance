@@ -1,13 +1,19 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { sendOtpEmail } from "@/lib/mailer";
+import type { ForgotPasswordBody, User } from "@/types/auth";
+
+type UserDocument = Omit<User, "_id"> & {
+  _id: import("mongodb").ObjectId;
+};
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const identifier = (body.identifier || "").toLowerCase().trim();
+    const { identifier }: ForgotPasswordBody = await req.json();
 
-    if (!identifier) {
+    const normalizedIdentifier = identifier.trim().toLowerCase();
+
+    if (!normalizedIdentifier) {
       return NextResponse.json(
         { success: false, message: "กรอกข้อมูลไม่ครบ" },
         { status: 400 }
@@ -17,11 +23,14 @@ export async function POST(req: Request) {
     const client = await clientPromise;
     const db = client.db("attendance");
 
-    const users = db.collection("users");
+    const users = db.collection<UserDocument>("users");
     const resets = db.collection("password_resets");
 
     const user = await users.findOne({
-      $or: [{ email: identifier }, { username: identifier }],
+      $or: [
+        { email: normalizedIdentifier },
+        { username: normalizedIdentifier },
+      ],
     });
 
     if (user) {
@@ -37,9 +46,13 @@ export async function POST(req: Request) {
         });
       }
 
-      await resets.deleteMany({ userId: user._id });
+      await resets.deleteMany({
+        userId: user._id,
+      });
 
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otp = Math.floor(
+        100000 + Math.random() * 900000
+      ).toString();
 
       await resets.insertOne({
         userId: user._id,
@@ -63,6 +76,7 @@ export async function POST(req: Request) {
     });
   } catch (error) {
     console.error(error);
+
     return NextResponse.json(
       { success: false, message: "เกิดข้อผิดพลาด" },
       { status: 500 }

@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import type {
+  StudentDocument,
+  StudentClassDocument,
+  UpdateStudentBody,
+} from "@/types/students";
 
 const isValidStudentId = (id: string) => /^\d{9}-\d$/.test(id);
 
@@ -12,22 +17,9 @@ const isValidEmail = (email: string) =>
 
 const isValidSection = (section: string) => /^[0-9]+$/.test(section);
 
-type UpdatePayload = {
-  _id: string;
-  studentId: string;
-  fullName: string;
-  email?: string;
-
-  classes?: {
-    className: string;
-    section: string;
-    academicYear: number;
-  }[];
-};
-
 export async function PUT(req: Request) {
   try {
-    const body: UpdatePayload = await req.json();
+    const body: UpdateStudentBody = await req.json();
 
     const { _id, studentId, fullName, email, classes } = body;
 
@@ -104,7 +96,7 @@ export async function PUT(req: Request) {
     }
 
     for (const c of classes) {
-      if (!c.className) {
+      if (!c.className?.trim()) {
         return NextResponse.json(
           {
             success: false,
@@ -127,29 +119,74 @@ export async function PUT(req: Request) {
           },
         );
       }
+
+      if (!Number.isInteger(c.academicYear)) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "academicYear ไม่ถูกต้อง",
+          },
+          {
+            status: 400,
+          },
+        );
+      }
     }
 
     const client = await clientPromise;
-
     const db = client.db("attendance");
 
-    const studentsCol = db.collection("students");
+    const studentsCol = db.collection<StudentDocument>("students");
 
-    const studentClassesCol = db.collection("student_classes");
+    const studentClassesCol =
+      db.collection<StudentClassDocument>("student_classes");
+
+    const objectId = new ObjectId(_id);
+
+    const existingStudent = await studentsCol.findOne({
+      _id: objectId,
+    });
+
+    if (!existingStudent) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "ไม่พบข้อมูลนักศึกษา",
+        },
+        {
+          status: 404,
+        },
+      );
+    }
+
+    const duplicateStudent = await studentsCol.findOne({
+      studentId,
+      _id: {
+        $ne: objectId,
+      },
+    });
+
+    if (duplicateStudent) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "รหัสนักศึกษานี้มีอยู่แล้ว",
+        },
+        {
+          status: 400,
+        },
+      );
+    }
 
     await studentsCol.updateOne(
       {
-        _id: new ObjectId(_id),
+        _id: objectId,
       },
       {
         $set: {
           studentId,
           fullName,
-
-          ...(email !== undefined && {
-            email,
-          }),
-
+          ...(email !== undefined ? { email } : {}),
           updatedAt: new Date(),
         },
       },
@@ -158,7 +195,7 @@ export async function PUT(req: Request) {
     for (const c of classes) {
       const result = await studentClassesCol.updateOne(
         {
-          studentId: new ObjectId(_id),
+          studentId: objectId,
           className: c.className,
           academicYear: c.academicYear,
         },
@@ -183,15 +220,22 @@ export async function PUT(req: Request) {
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "อัปเดตสำเร็จ",
-    });
-  } catch (error) {
+    return NextResponse.json(
+      {
+        success: true,
+        message: "อัปเดตสำเร็จ",
+      },
+      {
+        status: 200,
+      },
+    );
+  } catch (error: unknown) {
+    console.error("UPDATE STUDENT ERROR:", error);
+
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : "error",
+        message: error instanceof Error ? error.message : "เกิดข้อผิดพลาด",
       },
       {
         status: 500,

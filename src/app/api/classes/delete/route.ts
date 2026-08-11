@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import { ObjectId } from "mongodb";
+import type { ClassDocument } from "@/types/classes";
 
 export async function DELETE(req: Request) {
   try {
@@ -9,21 +10,28 @@ export async function DELETE(req: Request) {
 
     if (!id) {
       return NextResponse.json(
-        { success: false, message: "กรุณาระบุ id" },
+        {
+          success: false,
+          message: "กรุณาระบุ id",
+        },
         { status: 400 }
       );
     }
 
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
-        { success: false, message: "รูปแบบ id ไม่ถูกต้อง" },
+        {
+          success: false,
+          message: "รูปแบบ id ไม่ถูกต้อง",
+        },
         { status: 400 }
       );
     }
 
     const client = await clientPromise;
     const db = client.db("attendance");
-    const classes = db.collection("classes");
+
+    const classes = db.collection<ClassDocument>("classes");
 
     const objectId = new ObjectId(id);
 
@@ -33,7 +41,10 @@ export async function DELETE(req: Request) {
 
     if (!existing) {
       return NextResponse.json(
-        { success: false, message: "ไม่พบข้อมูลที่ต้องการลบ" },
+        {
+          success: false,
+          message: "ไม่พบข้อมูลที่ต้องการลบ",
+        },
         { status: 404 }
       );
     }
@@ -52,7 +63,10 @@ export async function DELETE(req: Request) {
     return NextResponse.json(
       {
         success: false,
-        message: error instanceof Error ? error.message : "Unknown error",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Unknown error",
       },
       { status: 500 }
     );
