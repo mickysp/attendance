@@ -6,6 +6,7 @@ import type { ClassDocument } from "@/types/classes";
 export async function DELETE(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
+
     const id = searchParams.get("id");
 
     if (!id) {
@@ -14,7 +15,7 @@ export async function DELETE(req: Request) {
           success: false,
           message: "กรุณาระบุ id",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -24,11 +25,12 @@ export async function DELETE(req: Request) {
           success: false,
           message: "รูปแบบ id ไม่ถูกต้อง",
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     const client = await clientPromise;
+
     const db = client.db("attendance");
 
     const classes = db.collection<ClassDocument>("classes");
@@ -45,30 +47,35 @@ export async function DELETE(req: Request) {
           success: false,
           message: "ไม่พบข้อมูลที่ต้องการลบ",
         },
-        { status: 404 }
+        { status: 404 },
       );
     }
 
-    await classes.deleteOne({
+    const result = await classes.deleteOne({
       _id: objectId,
     });
+
+    if (result.deletedCount === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: "ไม่สามารถลบรายวิชาได้",
+        },
+        { status: 500 },
+      );
+    }
 
     return NextResponse.json({
       success: true,
       message: "ลบรายวิชาสำเร็จ",
     });
   } catch (error: unknown) {
-    console.error("DELETE CLASS ERROR:", error);
-
     return NextResponse.json(
       {
         success: false,
-        message:
-          error instanceof Error
-            ? error.message
-            : "Unknown error",
+        message: error instanceof Error ? error.message : "Unknown error",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

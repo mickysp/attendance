@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     const insertData: ClassDocument[] = [];
 
     for (const item of classList) {
-      const { className, classCodes, teacherId, description } = item;
+      const { className, classCodes, teacherIds, description } = item;
 
       if (!className?.trim()) {
         return NextResponse.json(
@@ -46,6 +46,59 @@ export async function POST(req: Request) {
           { status: 400 },
         );
       }
+
+      if (!teacherIds || teacherIds.length === 0) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: `วิชา ${className} ต้องมีอาจารย์ผู้สอนอย่างน้อย 1 คน`,
+          },
+          { status: 400 },
+        );
+      }
+
+      const uniqueTeacherIds = Array.from(new Set(teacherIds));
+
+      const invalidTeacherId = uniqueTeacherIds.find(
+        (teacherId) => !ObjectId.isValid(teacherId),
+      );
+
+      if (invalidTeacherId) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: `รูปแบบรหัสอาจารย์ไม่ถูกต้อง: ${invalidTeacherId}`,
+          },
+          { status: 400 },
+        );
+      }
+
+      const teacherObjectIds = uniqueTeacherIds.map(
+        (teacherId) => new ObjectId(teacherId),
+      );
+
+      const foundTeachers = await teachersCol
+        .find({
+          _id: {
+            $in: teacherObjectIds,
+          },
+        })
+        .toArray();
+
+      if (foundTeachers.length !== uniqueTeacherIds.length) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: `พบข้อมูลอาจารย์ไม่ครบสำหรับวิชา ${className}`,
+          },
+          { status: 400 },
+        );
+      }
+
+      const normalizedTeachers: Teacher[] = foundTeachers.map((teacher) => ({
+        _id: teacher._id.toString(),
+        name: teacher.name,
+      }));
 
       const normalizedClassCodes: ClassCodePayload[] = [];
 
@@ -91,7 +144,7 @@ export async function POST(req: Request) {
           return NextResponse.json(
             {
               success: false,
-              message: `รหัสวิชา ${code} ซ้ำกันในรายการที่ส่งมา`,
+              message: `รหัสวิชา ${code} Section ${section} ซ้ำกันในรายการที่ส่งมา`,
             },
             { status: 400 },
           );
@@ -148,7 +201,7 @@ export async function POST(req: Request) {
           return NextResponse.json(
             {
               success: false,
-              message: `พบสาขาไม่ครบสำหรับรหัสวิชา ${code}`,
+              message: `พบสาขาไม่ครบสำหรับรหัสวิชา ${code} Section ${section}`,
             },
             { status: 400 },
           );
@@ -166,51 +219,15 @@ export async function POST(req: Request) {
         });
       }
 
-      let normalizedTeacher: Teacher | undefined;
-
-      if (teacherId) {
-        if (!ObjectId.isValid(teacherId)) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: "รูปแบบรหัสอาจารย์ไม่ถูกต้อง",
-            },
-            { status: 400 },
-          );
-        }
-
-        const teacher = await teachersCol.findOne({
-          _id: new ObjectId(teacherId),
-        });
-
-        if (!teacher) {
-          return NextResponse.json(
-            {
-              success: false,
-              message: "ไม่พบอาจารย์",
-            },
-            { status: 400 },
-          );
-        }
-
-        normalizedTeacher = {
-          _id: teacher._id.toString(),
-          name: teacher.name,
-        };
-      }
-
       const newClass: ClassDocument = {
         className: className.trim(),
         classCodes: normalizedClassCodes,
+        teachers: normalizedTeachers,
         createdAt: new Date(),
       };
 
       if (description?.trim()) {
         newClass.description = description.trim();
-      }
-
-      if (normalizedTeacher) {
-        newClass.teacher = normalizedTeacher;
       }
 
       insertData.push(newClass);
@@ -227,8 +244,6 @@ export async function POST(req: Request) {
       { status: 201 },
     );
   } catch (error: unknown) {
-    console.error("CREATE CLASS ERROR:", error);
-
     return NextResponse.json(
       {
         success: false,

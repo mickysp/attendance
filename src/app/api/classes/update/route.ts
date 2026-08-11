@@ -27,7 +27,7 @@ type ClassCodePayload = {
 type IncomingClass = {
   className?: string;
   classCodes?: IncomingClassCode[];
-  teacherId?: string;
+  teacherIds?: string[];
   description?: string;
 };
 
@@ -35,7 +35,7 @@ type UpdateClassPayload = {
   className?: string;
   classCodes?: ClassCodePayload[];
   description?: string;
-  teacher?: Teacher;
+  teachers?: Teacher[];
   updatedAt?: Date;
 };
 
@@ -46,14 +46,20 @@ export async function PUT(req: Request) {
 
     if (!id) {
       return NextResponse.json(
-        { success: false, message: "กรุณาระบุ id" },
+        {
+          success: false,
+          message: "กรุณาระบุ id",
+        },
         { status: 400 },
       );
     }
 
     if (!ObjectId.isValid(id)) {
       return NextResponse.json(
-        { success: false, message: "รูปแบบ id ไม่ถูกต้อง" },
+        {
+          success: false,
+          message: "รูปแบบ id ไม่ถูกต้อง",
+        },
         { status: 400 },
       );
     }
@@ -64,7 +70,9 @@ export async function PUT(req: Request) {
     const db = client.db("attendance");
 
     const classes = db.collection<UpdateClassPayload>("classes");
+
     const majors = db.collection("majors");
+
     const teachersCol = db.collection("teachers");
 
     const objectId = new ObjectId(id);
@@ -75,16 +83,22 @@ export async function PUT(req: Request) {
 
     if (!existing) {
       return NextResponse.json(
-        { success: false, message: "ไม่พบข้อมูลที่ต้องการแก้ไข" },
+        {
+          success: false,
+          message: "ไม่พบข้อมูลที่ต้องการแก้ไข",
+        },
         { status: 404 },
       );
     }
 
-    const { className, classCodes, description, teacherId } = body;
+    const { className, classCodes, teacherIds, description } = body;
 
     if (className !== undefined && !className.trim()) {
       return NextResponse.json(
-        { success: false, message: "กรุณากรอกชื่อวิชา" },
+        {
+          success: false,
+          message: "กรุณากรอกชื่อวิชา",
+        },
         { status: 400 },
       );
     }
@@ -109,45 +123,62 @@ export async function PUT(req: Request) {
       updateData.description = description.trim();
     }
 
-    if (teacherId !== undefined) {
-      if (!teacherId.trim()) {
+
+    if (teacherIds !== undefined) {
+      if (teacherIds.length === 0) {
         return NextResponse.json(
           {
             success: false,
-            message: "กรุณาระบุอาจารย์",
+            message: "วิชาต้องมีอาจารย์ผู้สอนอย่างน้อย 1 คน",
           },
           { status: 400 },
         );
       }
 
-      if (!ObjectId.isValid(teacherId)) {
+      const uniqueTeacherIds = Array.from(new Set(teacherIds));
+
+      const invalidTeacherId = uniqueTeacherIds.find(
+        (teacherId) => !ObjectId.isValid(teacherId),
+      );
+
+      if (invalidTeacherId) {
         return NextResponse.json(
           {
             success: false,
-            message: "รูปแบบรหัสอาจารย์ไม่ถูกต้อง",
+            message: `รูปแบบรหัสอาจารย์ไม่ถูกต้อง: ${invalidTeacherId}`,
           },
           { status: 400 },
         );
       }
 
-      const teacher = await teachersCol.findOne({
-        _id: new ObjectId(teacherId),
-      });
+      const teacherObjectIds = uniqueTeacherIds.map(
+        (teacherId) => new ObjectId(teacherId),
+      );
 
-      if (!teacher) {
+      const foundTeachers = await teachersCol
+        .find({
+          _id: {
+            $in: teacherObjectIds,
+          },
+        })
+        .toArray();
+
+      if (foundTeachers.length !== uniqueTeacherIds.length) {
         return NextResponse.json(
           {
             success: false,
-            message: "ไม่พบอาจารย์",
+            message: "พบข้อมูลอาจารย์ไม่ครบ",
           },
           { status: 400 },
         );
       }
 
-      updateData.teacher = {
+      const normalizedTeachers: Teacher[] = foundTeachers.map((teacher) => ({
         _id: teacher._id.toString(),
         name: teacher.name,
-      };
+      }));
+
+      updateData.teachers = normalizedTeachers;
     }
 
     if (classCodes !== undefined) {
@@ -155,6 +186,7 @@ export async function PUT(req: Request) {
 
       for (const classCodeItem of classCodes) {
         const code = classCodeItem.code?.trim();
+
         const section = Number(classCodeItem.section);
 
         if (!code) {
@@ -181,11 +213,13 @@ export async function PUT(req: Request) {
           return NextResponse.json(
             {
               success: false,
-              message: `รหัสวิชา ${code} ต้องมีอย่างน้อย 1 สาขา`,
+              message: `รหัสวิชา ${code} Section ${section} ต้องมีอย่างน้อย 1 สาขา`,
             },
             { status: 400 },
           );
         }
+
+        const uniqueBranchIds = Array.from(new Set(classCodeItem.branchIds));
 
         const duplicateInRequest = normalizedClassCodes.some(
           (item) => item.code === code && item.section === section,
@@ -195,14 +229,17 @@ export async function PUT(req: Request) {
           return NextResponse.json(
             {
               success: false,
-              message: `รหัสวิชา ${code} ซ้ำกันในรายการที่ส่งมา`,
+              message: `รหัสวิชา ${code} Section ${section} ซ้ำกันในรายการที่ส่งมา`,
             },
             { status: 400 },
           );
         }
 
         const duplicate = await classes.findOne({
-          _id: { $ne: objectId },
+          _id: {
+            $ne: objectId,
+          },
+
           classCodes: {
             $elemMatch: {
               code,
@@ -220,8 +257,6 @@ export async function PUT(req: Request) {
             { status: 400 },
           );
         }
-
-        const uniqueBranchIds = Array.from(new Set(classCodeItem.branchIds));
 
         const invalidBranchId = uniqueBranchIds.find(
           (branchId) => !ObjectId.isValid(branchId),
@@ -253,7 +288,7 @@ export async function PUT(req: Request) {
           return NextResponse.json(
             {
               success: false,
-              message: `พบสาขาไม่ครบสำหรับรหัสวิชา ${code}`,
+              message: `พบสาขาไม่ครบสำหรับรหัสวิชา ${code} Section ${section}`,
             },
             { status: 400 },
           );
@@ -277,7 +312,9 @@ export async function PUT(req: Request) {
     updateData.updatedAt = new Date();
 
     await classes.updateOne(
-      { _id: objectId },
+      {
+        _id: objectId,
+      },
       {
         $set: updateData,
       },
@@ -288,8 +325,6 @@ export async function PUT(req: Request) {
       message: "อัปเดตรายวิชาสำเร็จ",
     });
   } catch (error: unknown) {
-    console.error("UPDATE CLASS ERROR:", error);
-
     return NextResponse.json(
       {
         success: false,

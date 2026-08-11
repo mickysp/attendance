@@ -43,7 +43,7 @@ export async function GET(req: Request) {
       .project<MongoClassDocument>({
         className: 1,
         classCodes: 1,
-        teacher: 1,
+        teachers: 1,
         description: 1,
         isOpen: 1,
         createdAt: 1,
@@ -82,24 +82,18 @@ export async function GET(req: Request) {
     }
 
     const safeData: ClassResponse[] = filteredClasses.map((item) => {
-      let teacher:
-        | {
-            _id: string;
-            name: string;
-          }
-        | undefined;
+      const teachers = Array.isArray(item.teachers)
+        ? item.teachers
+            .filter(
+              (teacher) =>
+                teacher && typeof teacher === "object" && teacher._id,
+            )
+            .map((teacher) => ({
+              _id: teacher._id.toString(),
 
-      if (
-        item.teacher &&
-        typeof item.teacher === "object" &&
-        item.teacher._id
-      ) {
-        teacher = {
-          _id: item.teacher._id.toString(),
-
-          name: typeof item.teacher.name === "string" ? item.teacher.name : "",
-        };
-      }
+              name: typeof teacher.name === "string" ? teacher.name : "",
+            }))
+        : [];
 
       const classCodes = Array.isArray(item.classCodes)
         ? item.classCodes.map((classCode) => ({
@@ -120,18 +114,12 @@ export async function GET(req: Request) {
 
       return {
         _id: item._id.toString(),
-
         className: typeof item.className === "string" ? item.className : "",
-
         academicYear:
           typeof item.academicYear === "number" ? item.academicYear : undefined,
-
-        teacher,
-
+        teachers,
         classCodes,
-
         isOpen: typeof item.isOpen === "boolean" ? item.isOpen : undefined,
-
         createdAt: item.createdAt,
       };
     });
@@ -179,6 +167,7 @@ export async function GET(req: Request) {
                 }
               : {},
         },
+
         {
           $project: {
             classId: {
@@ -196,6 +185,7 @@ export async function GET(req: Request) {
             },
           },
         },
+
         {
           $match: {
             classId: {
@@ -203,6 +193,7 @@ export async function GET(req: Request) {
             },
           },
         },
+
         {
           $group: {
             _id: "$classId",
