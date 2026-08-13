@@ -2,57 +2,16 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import Sidebar from "@/components/layouts/Sidebar";
-import { DocumentTextIcon } from "@heroicons/react/24/outline";
 import Table from "@/components/classes/Table";
 import Select from "@/components/classes/Select";
-
-type Branch = {
-  _id: string;
-  name: string;
-};
-
-type Teacher = {
-  _id: string;
-  name: string;
-};
-
-type ClassItem = {
-  _id: string;
-  className: string;
-  classCode?: string;
-  description?: string;
-  teacher?: Teacher;
-  branches?: Branch[];
-};
-
-type RawBranch = string | Branch;
-type RawTeacher = string | Teacher;
-
-type RawClass = {
-  _id: string;
-  className: string;
-  classCode?: string;
-  description?: string;
-  teacher?: RawTeacher;
-  branches?: RawBranch[];
-};
-
-const normalizeClass = (c: RawClass): ClassItem => ({
-  ...c,
-  teacher:
-    typeof c.teacher === "string" ? { _id: "", name: c.teacher } : c.teacher,
-  branches: (c.branches ?? []).map((b) =>
-    typeof b === "string" ? { _id: b, name: b } : b,
-  ),
-});
+import type { ClassResponse } from "@/types/classes";
 
 export default function ClassesPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(true);
-  const [classes, setClasses] = useState<ClassItem[]>([]);
-  const [fetched, setFetched] = useState(false);
+  const [classes, setClasses] = useState<ClassResponse[]>([]);
+
   const [filter, setFilter] = useState({
     keyword: "",
     branch: "",
@@ -67,13 +26,15 @@ export default function ClassesPage() {
         const data = await res.json();
 
         if (data.success && Array.isArray(data.data)) {
-          setClasses(data.data.map(normalizeClass));
+          setClasses(data.data as ClassResponse[]);
         } else {
           setClasses([]);
         }
+      } catch (error) {
+        console.error("Fetch classes error:", error);
+        setClasses([]);
       } finally {
         setLoading(false);
-        setFetched(true);
       }
     };
 
@@ -81,14 +42,18 @@ export default function ClassesPage() {
   }, []);
 
   const filteredClasses = classes.filter((c) => {
-    const keyword = filter.keyword.toLowerCase();
+    const keyword = filter.keyword.toLowerCase().trim();
 
     const matchKeyword =
       c.className.toLowerCase().includes(keyword) ||
-      (c.classCode ?? "").toLowerCase().includes(keyword);
+      c.classCodes.some((classCode) =>
+        classCode.code.toLowerCase().includes(keyword),
+      );
 
     const matchBranch = filter.branch
-      ? (c.branches ?? []).some((b) => b.name === filter.branch)
+      ? c.classCodes.some((classCode) =>
+          classCode.branches.some((branch) => branch.name === filter.branch),
+        )
       : true;
 
     return matchKeyword && matchBranch;
@@ -102,14 +67,13 @@ export default function ClassesPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-blue-50">
-      <Sidebar />
-
       <div className="flex-1 p-6 font-noto relative">
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-300">
             <div className="flex flex-col items-center gap-4">
-              <div className="h-14 w-14 animate-spin rounded-full border-4 border-white border-t-transparent"></div>
-              <p className="text-gray-600 text-base text-white">กำลังโหลด...</p>
+              <div className="h-14 w-14 animate-spin rounded-full border-4 border-white border-t-transparent" />
+
+              <p className="text-base text-white">กำลังโหลด...</p>
             </div>
           </div>
         )}
@@ -121,6 +85,7 @@ export default function ClassesPage() {
                 <h1 className="text-[26px] font-semibold text-gray-800">
                   Classes
                 </h1>
+
                 <p className="text-sm text-gray-400 mt-1">
                   จัดการข้อมูลรายวิชาที่มีอยู่ในระบบ
                 </p>
@@ -163,7 +128,11 @@ export default function ClassesPage() {
 
             <div className="flex flex-1 flex-col items-center justify-center text-center">
               <div className="mb-3 flex items-center justify-center w-28 h-28 rounded-full bg-gray-100">
-                <img src="/not-exist.png" className="w-28 h-28" />
+                <img
+                  src="/not-exist.png"
+                  alt="ไม่มีข้อมูล"
+                  className="w-28 h-28"
+                />
               </div>
 
               <p className="text-sm text-gray-400 mb-4">

@@ -2,7 +2,6 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
-import Sidebar from "@/components/layouts/Sidebar";
 import {
   TrashIcon,
   ArrowLeftIcon,
@@ -186,8 +185,6 @@ export default function CreateStudentPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-blue-50">
-      <Sidebar />
-
       <div className="flex-1 overflow-y-auto p-6 font-noto relative">
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-300">

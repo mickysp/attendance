@@ -1,25 +1,22 @@
-export default function AuthLayout({ children }: { children: React.ReactNode }) {
+"use client";
+
+import type { ReactNode } from "react";
+import Navbar from "@/components/layouts/Navbar";
+import Footer from "@/components/layouts/Footer";
+interface AuthLayoutProps {
+  children: ReactNode;
+}
+
+export default function AuthLayout({ children }: AuthLayoutProps) {
   return (
-    <div className="grid min-h-screen grid-cols-[60%_40%] font-noto">
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <Navbar />
 
-      <div className="flex flex-col justify-center bg-[#F0F4FB] p-20 pl-34">
-        <h1 className="text-7xl font-semibold text-zinc-800">
-          Attendance
-        </h1>
-
-        <h2 className="mt-2 text-6xl text-blue-900">
-          for university classrooms
-        </h2>
-
-        <p className="mt-6 max-w-md text-zinc-500 text-base">
-          Record and monitor student attendance in your classroom.
-        </p>
-      </div>
-
-      <div className="flex items-center justify-center bg-white-100">
+      <main className="flex-1 flex justify-center items-start pt-16">
         {children}
-      </div>
+      </main>
 
+      <Footer />
     </div>
   );
 }

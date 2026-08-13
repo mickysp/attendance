@@ -1,7 +1,22 @@
 import type { ObjectId } from "mongodb";
 
-export type AttendanceStatus = "มาเรียน" | "มาสาย";
-
+export type AttendanceStatus = "มาเรียน" | "มาสาย" | "ลา" | "ขาด";
+export interface StudentAttendance {
+  studentId: string;
+  name: string;
+  email: string;
+  attendanceDate?: string | null;
+  section: string;
+  major: string;
+  status: AttendanceStatus;
+  score: number;
+  checkInTime: string | null;
+  totalScore: number;
+  days: number;
+  absentDays: number;
+  lateDays: number;
+  averageScore: number;
+}
 export interface AttendanceDocument {
   _id?: ObjectId;
   sessionId: ObjectId;
@@ -20,7 +35,6 @@ export interface AttendanceDocument {
   createdAt: Date;
   updatedAt: Date;
 }
-
 export interface CheckInRequestBody {
   classId: string;
   sessionId: string;
@@ -29,14 +43,12 @@ export interface CheckInRequestBody {
   section?: string;
   email?: string;
 }
-
 export interface AttendanceResult {
   success: boolean;
   message?: string;
   status?: AttendanceStatus;
   score?: number;
 }
-
 export interface AttendanceResponse {
   success: boolean;
   message: string;

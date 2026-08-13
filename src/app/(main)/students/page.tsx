@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import Sidebar from "@/components/layouts/Sidebar";
 import {
   DocumentArrowUpIcon,
   ChevronDownIcon,
@@ -220,8 +219,6 @@ export default function StudentsPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-blue-50">
-      <Sidebar />
-
       <div className="flex-1 p-6 font-noto relative">
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-300">

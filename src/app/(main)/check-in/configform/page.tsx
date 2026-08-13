@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Sidebar from "@/components/layouts/Sidebar";
 import { Upload } from "lucide-react";
 import { useConfirm } from "@/context/ConfirmContext";
 import { useAlert } from "@/context/AlertContext";
@@ -225,8 +224,6 @@ export default function CheckInFormPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-blue-50">
-      <Sidebar />
-
       <div className="flex-1 overflow-y-auto p-6 font-noto">
         <div className="bg-white rounded-2xl p-8 w-full">
           <h1 className="text-[26px] font-semibold text-gray-800">

@@ -1,7 +1,7 @@
 "use client";
 
 import { Suspense } from "react";
-import CheckInContent from "./CheckInStudent";
+import CheckInContent from "../../check-in/CheckInStudent";
 
 export const dynamic = "force-dynamic";
 

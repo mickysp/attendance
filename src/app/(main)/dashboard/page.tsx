@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Sidebar from "@/components/layouts/Sidebar";
 import { DocumentTextIcon } from "@heroicons/react/24/outline";
 
 export default function DashboardPage() {
@@ -18,8 +17,6 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-blue-50">
-      <Sidebar />
-
       <div className="flex-1 overflow-y-auto p-6 font-noto relative">
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-gray-300">

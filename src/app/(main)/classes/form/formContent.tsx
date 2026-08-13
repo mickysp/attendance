@@ -10,7 +10,6 @@ import {
 } from "@heroicons/react/24/outline";
 import { useAlert } from "@/context/AlertContext";
 import { useEffect, useState } from "react";
-import Sidebar from "@/components/layouts/Sidebar";
 import "react-datepicker/dist/react-datepicker.css";
 import DatePicker from "react-datepicker";
 
@@ -401,8 +400,6 @@ export default function QRPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-blue-50">
-      <Sidebar />
-
       <div className="flex-1 overflow-y-auto p-6 font-noto relative">
         {loading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/80">

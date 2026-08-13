@@ -2,7 +2,6 @@
 
 import { useRouter, useParams } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-import Sidebar from "@/components/layouts/Sidebar";
 import {
   TrashIcon,
   ArrowLeftIcon,
@@ -601,8 +600,6 @@ export default function EditClassPage() {
   if (loading) {
     return (
       <div className="flex h-screen overflow-hidden bg-blue-50">
-        <Sidebar />
-
         <div className="flex-1 flex items-center justify-center font-noto">
           <div className="flex flex-col items-center gap-4">
             <div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-[var(--primary)]" />
@@ -619,8 +616,6 @@ export default function EditClassPage() {
   if (!item) {
     return (
       <div className="flex h-screen overflow-hidden bg-blue-50">
-        <Sidebar />
-
         <div className="flex-1 p-6 font-noto">
           <div className="bg-white rounded-2xl p-6">
             <p className="text-gray-600">
@@ -634,8 +629,6 @@ export default function EditClassPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-blue-50">
-      <Sidebar />
-
       <div className="flex-1 overflow-y-auto p-6 font-noto">
         <div className="bg-white rounded-2xl pt-6 px-6 pb-6">
           <div className="flex items-center gap-3 mb-4">
